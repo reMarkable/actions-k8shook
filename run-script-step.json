@@ -1,0 +1,21 @@
+{
+  "Args": {
+    "Container": {
+      "CreateOptions": null,
+      "Dockerfile": "",
+      "Entrypoint": "",
+      "EntrypointArgs": null,
+      "EntrypointVariables": null,
+      "Image": "",
+      "PortMappings": null,
+      "Registry": "",
+      "SystemMountVolumes": null,
+      "UserMountVolumes": null,
+      "WorkingDirectory": ""
+    },
+    "Services": null
+  },
+  "Command": "run_script_step",
+  "ResponseFile": "/home/marcus/.github-runner/_work/_temp/_runner_hook_responses/d5ad5475-d1b7-4893-9aee-66c47c139de7.json",
+  "State": { "JobPod": "local-pod-workflow" }
+}
