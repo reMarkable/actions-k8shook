@@ -1,0 +1,21 @@
+{
+  "Args": {
+    "Container": {
+      "CreateOptions": null,
+      "Dockerfile": "",
+      "Entrypoint": "",
+      "EntrypointArgs": null,
+      "EntrypointVariables": null,
+      "Image": "",
+      "PortMappings": null,
+      "Registry": "",
+      "SystemMountVolumes": null,
+      "UserMountVolumes": null,
+      "WorkingDirectory": ""
+    },
+    "Services": null
+  },
+  "Command": "cleanup_job",
+  "ResponseFile": "/home/marcus/.github-runner/_work/_temp/_runner_hook_responses/b711ac4f-3ea8-4e39-8935-0d6f5afe4bdf.json",
+  "State": { "JobPod": "local-pod-workflow" }
+}
