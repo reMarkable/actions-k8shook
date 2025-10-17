@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/reMarkable/k8s-hook/pkg/command"
@@ -10,6 +11,9 @@ import (
 )
 
 func main() {
+	if os.Getenv("DEBUG_HOOK") == "1" {
+		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	}
 	if checkPipedInput() {
 		hookInput := getInput()
 		switch hookInput.Command {
@@ -21,6 +25,9 @@ func main() {
 			command.RunContainerStep(hookInput)
 		case "run_script_step":
 			command.RunScriptStep(hookInput)
+		default:
+			slog.Error("Unknown command", "command", hookInput.Command)
+			os.Exit(1)
 		}
 	} else {
 		fmt.Println("No piped input detected. This hook is intended to be run by github actions runner.")

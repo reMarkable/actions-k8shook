@@ -14,5 +14,5 @@ func RunScriptStep(input types.ContainerHookInput) {
 		slog.Error("Failed to talk to kubernetes", "err", err)
 		os.Exit(1)
 	}
-	k8s.ExecStepInPod(input.State["jobPod"], input.Args.Container.Entrypoint, input.Args.Container.EntrypointArgs)
+	k8s.ExecStepInPod(input.State["JobPod"], input.Args.Container.Entrypoint, input.Args.Container.EntrypointArgs)
 }

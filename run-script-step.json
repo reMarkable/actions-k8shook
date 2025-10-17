@@ -3,8 +3,8 @@
     "Container": {
       "CreateOptions": null,
       "Dockerfile": "",
-      "Entrypoint": "",
-      "EntrypointArgs": null,
+      "Entrypoint": "echo",
+      "EntrypointArgs": ["hello", "world"],
       "EntrypointVariables": null,
       "Image": "",
       "PortMappings": null,

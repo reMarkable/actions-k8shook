@@ -121,13 +121,13 @@ func (c *K8sClient) ExecStepInPod(name string, command string, args []string) (s
 	req.VersionedParams(&v1.PodExecOptions{
 		Container: "job-container",
 		Command:   append(cl, args...),
-		Stdin:     true,
+		Stdin:     false,
 		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,
 	}, scheme.ParameterCodec)
 
-	slog.Debug("trying to exec", "req", req)
+	slog.Debug("trying to exec", "req", req.URL().String(), "name", name, "command", command, "args", args)
 	exec, err := remotecommand.NewSPDYExecutor(c.config, "POST", req.URL())
 	if err != nil {
 		slog.Error("Failed to setup remote executor", "err", err)
@@ -135,12 +135,14 @@ func (c *K8sClient) ExecStepInPod(name string, command string, args []string) (s
 	}
 
 	opt := remotecommand.StreamOptions{
-		Stdin:  os.Stdin,
+		Stdin:  nil,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 		Tty:    false,
 	}
-	if err := exec.StreamWithContext(c.ctx, opt); err != nil {
+	cancelCtx, cancel := context.WithCancel(c.ctx)
+	defer cancel()
+	if err := exec.StreamWithContext(cancelCtx, opt); err != nil {
 		slog.Error("Failed to stream context", "err", err)
 		return "", err
 	}
@@ -173,9 +175,9 @@ func (c *K8sClient) waitForPodReady(name string) error {
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(oldObj, newObj any) {
 			pod := newObj.(*v1.Pod)
-			slog.Info("Pod status changed", "pod", pod.Name, "status", pod.Status.Phase)
+			slog.Debug("Pod status changed", "pod", pod.Name, "status", pod.Status.Phase)
 			for _, c := range pod.Status.ContainerStatuses {
-				fmt.Printf("Container %s state: %+v\n", c.Name, c.State)
+				slog.Debug("Container state", "name", c.Name, "state", c.State)
 				if c.State.Waiting != nil && c.State.Waiting.Reason == "ImagePullBackOff" {
 					slog.Error("Runner failed to pull image", "pod", pod.Name, "reason", c.State.Waiting.Reason, "message", c.State.Waiting.Message)
 					err = fmt.Errorf("failed to pull image: %s", c.State.Waiting.Message)

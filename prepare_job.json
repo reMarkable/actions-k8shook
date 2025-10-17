@@ -67,6 +67,6 @@
     "services": []
   },
   "command": "prepare_job",
-  "responseFile": "/home/marcus/.github-runner/_work/_temp/_runner_hook_responses/39567475-516f-4829-9fd6-e51f25bd8d40.json",
+  "responseFile": "/tmp/39567475-516f-4829-9fd6-e51f25bd8d40.json",
   "state": null
 }
