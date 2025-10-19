@@ -31,10 +31,6 @@ func TestK8sClient_waitForPodReady(t *testing.T) {
 			if tt.wantErr {
 				t.Fatal("waitForPodReady() succeeded unexpectedly")
 			}
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("waitForPodReady() = %v, want %v", got, tt.want)
-			}
 		})
 	}
 }

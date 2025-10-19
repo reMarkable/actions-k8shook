@@ -13,7 +13,7 @@ func CleanupJob(input types.ContainerHookInput) {
 	if err != nil {
 		slog.Error("Failed to talk to kubernetes", "err", err)
 	}
-	deleteErr := k8s.DeletePod(input.State["JobPod"])
+	deleteErr := k8s.DeletePod(input.State["jobPod"])
 	if err != nil {
 		slog.Error("Failed to clean up pod", "err", deleteErr)
 		os.Exit(1)

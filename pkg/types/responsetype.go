@@ -1,16 +1,16 @@
 package types
 
 type ResponseType struct {
-	State     ResponseState
-	Container ContainerInfo
-	IsAlpine  bool
+	Context  map[string]ContainerInfo `json:"context"`
+	State    ResponseState            `json:"state"`
+	IsAlpine bool                     `json:"isAlpine"`
 }
 
 type ResponseState struct {
-	JobPod string
+	JobPod string `json:"jobPod"`
 }
 
 type ContainerInfo struct {
-	Image string
-	Ports map[int]int
+	Image string      `json:"image"`
+	Ports map[int]int `json:"ports"`
 }

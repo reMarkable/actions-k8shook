@@ -1,72 +1,70 @@
 {
+  "command": "prepare_job",
+  "responseFile": "/home/marcus/.github-runner/_work/_temp/_runner_hook_responses/f769decb-2ae4-4c04-9fdc-41e730ab4a3b.json",
   "args": {
     "container": {
-      "createOptions": null,
-      "dockerfile": null,
-      "entryPoint": null,
-      "entryPointArgs": [],
-      "environmentVariables": {
-        "HOME": "/github/home"
-      },
       "image": "ubuntu:latest",
-      "portMappings": [],
+      "dockerfile": null,
+      "entryPointArgs": [],
+      "entryPoint": null,
+      "workingDirectory": "/__w/gh-sandbox/gh-sandbox",
+      "createOptions": null,
       "registry": null,
+      "environmentVariables": { "HOME": "/github/home" },
+      "portMappings": [],
       "systemMountVolumes": [
         {
-          "readOnly": false,
+          "userProvidedValue": null,
           "sourceVolumePath": "/var/run/docker.sock",
           "targetVolumePath": "/var/run/docker.sock",
-          "userProvidedValue": null
+          "readOnly": false
         },
         {
-          "readOnly": false,
+          "userProvidedValue": null,
           "sourceVolumePath": "/home/marcus/.github-runner/_work",
           "targetVolumePath": "/__w",
-          "userProvidedValue": null
+          "readOnly": false
         },
         {
-          "readOnly": true,
-          "sourceVolumePath": "/nix/store/w21jq4a0cg2qv1pzpijflkz7w29a6zf8-github-runner-2.328.0/lib/externals",
+          "userProvidedValue": null,
+          "sourceVolumePath": "/nix/store/c8lgdqnw9xapg49hpj965h2hy86j43wn-github-runner-2.328.0/lib/externals",
           "targetVolumePath": "/__e",
-          "userProvidedValue": null
+          "readOnly": true
         },
         {
-          "readOnly": false,
+          "userProvidedValue": null,
           "sourceVolumePath": "/home/marcus/.github-runner/_work/_temp",
           "targetVolumePath": "/__w/_temp",
-          "userProvidedValue": null
+          "readOnly": false
         },
         {
-          "readOnly": false,
+          "userProvidedValue": null,
           "sourceVolumePath": "/home/marcus/.github-runner/_work/_actions",
           "targetVolumePath": "/__w/_actions",
-          "userProvidedValue": null
+          "readOnly": false
         },
         {
-          "readOnly": false,
+          "userProvidedValue": null,
           "sourceVolumePath": "/home/marcus/.github-runner/_work/_tool",
           "targetVolumePath": "/__w/_tool",
-          "userProvidedValue": null
+          "readOnly": false
         },
         {
-          "readOnly": false,
+          "userProvidedValue": null,
           "sourceVolumePath": "/home/marcus/.github-runner/_work/_temp/_github_home",
           "targetVolumePath": "/github/home",
-          "userProvidedValue": null
+          "readOnly": false
         },
         {
-          "readOnly": false,
+          "userProvidedValue": null,
           "sourceVolumePath": "/home/marcus/.github-runner/_work/_temp/_github_workflow",
           "targetVolumePath": "/github/workflow",
-          "userProvidedValue": null
+          "readOnly": false
         }
       ],
-      "userMountVolumes": [],
-      "workingDirectory": "/__w/gh-sandbox/gh-sandbox"
+      "userMountVolumes": []
     },
     "services": []
   },
-  "command": "prepare_job",
-  "responseFile": "/tmp/39567475-516f-4829-9fd6-e51f25bd8d40.json",
   "state": null
 }

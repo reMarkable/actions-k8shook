@@ -29,9 +29,11 @@ func PrepareJob(input types.ContainerHookInput) {
 		State: types.ResponseState{
 			JobPod: podName,
 		},
-		Container: types.ContainerInfo{
-			Image: input.Args.Container.Image,
-			Ports: nil,
+		Context: map[string]types.ContainerInfo{
+			"container": {
+				Image: input.Args.Container.Image,
+				Ports: map[int]int{},
+			},
 		},
 		IsAlpine: false,
 	}
@@ -43,6 +45,7 @@ func PrepareJob(input types.ContainerHookInput) {
 
 func writeResponse(file string, response types.ResponseType) error {
 	body, err := json.MarshalIndent(response, "", "  ")
+	slog.Debug("Writing response", "body", string(body))
 	if err != nil {
 		return err
 	}

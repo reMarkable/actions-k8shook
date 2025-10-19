@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/reMarkable/k8s-hook/pkg/command"
 	"github.com/reMarkable/k8s-hook/pkg/types"
@@ -36,13 +38,30 @@ func main() {
 
 func getInput() types.ContainerHookInput {
 	hookInput := types.ContainerHookInput{}
-	dec := json.NewDecoder(os.Stdin)
-	if err := dec.Decode(&hookInput); err != nil {
+	scanner := bufio.NewScanner(os.Stdin)
+
+	var inputJSON []byte
+	for scanner.Scan() {
+		inputJSON = append(inputJSON, scanner.Bytes()...)
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+		os.Exit(1)
+	}
+	decoder := json.NewDecoder(strings.NewReader(string(inputJSON)))
+	if os.Getenv("DEBUG_HOOK") == "1" {
+		fmt.Fprintf(os.Stderr, "struct %s\n", inputJSON)
+		decoder.DisallowUnknownFields()
+	}
+	if err := decoder.Decode(&hookInput); err != nil {
 		fmt.Fprintf(os.Stderr, "Unexpected JSON structure: %v\n", err)
 		os.Exit(1)
 	}
 	res, _ := json.Marshal(hookInput)
-	fmt.Printf("%s\n", res)
+	if os.Getenv("DEBUG_HOOK") == "1" {
+		fmt.Printf("%s\n", res)
+	}
 	return hookInput
 }
 
