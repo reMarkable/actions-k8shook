@@ -3,6 +3,7 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -13,7 +14,9 @@ import (
 
 	"github.com/reMarkable/k8s-hook/pkg/types"
 	v1 "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	v1Meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -30,6 +33,8 @@ type K8sClient struct {
 	ctx    context.Context
 	config *rest.Config
 }
+
+const JobVolumeName = "work"
 
 func NewK8sClient() (*K8sClient, error) {
 	var clientset *kubernetes.Clientset
@@ -60,10 +65,27 @@ func NewK8sClient() (*K8sClient, error) {
 }
 
 func (c *K8sClient) CreatePod(args types.InputArgs) (string, error) {
-	podName := c.getRunnerPodName() + "-workflow"
+	podSpec := c.preparePodSpec(args.Container)
+
+	pod, err := c.client.CoreV1().Pods(c.GetNS()).Create(c.ctx, podSpec, v1Meta.CreateOptions{})
+	if err != nil {
+		var statusErr *k8sErrors.StatusError
+		if errors.As(err, &statusErr) {
+			c.checkPermissions()
+		}
+		return "", err
+	}
+	if err = c.waitForPodReady(pod.Name); err != nil {
+		return "", err
+	}
+	return pod.Name, nil
+}
+
+func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition) *v1.Pod {
 	jobContainer := v1.Container{
-		Name:            "job",
-		Image:           args.Container.Image,
+		Name:  "job",
+		Image: cont.Image,
+		// FIXME:: Should not be set in production
 		ImagePullPolicy: v1.PullIfNotPresent,
 		Command:         []string{"tail"},
 		Args:            []string{"-f", "/dev/null"},
@@ -75,23 +97,57 @@ func (c *K8sClient) CreatePod(args types.InputArgs) (string, error) {
 				Name: "CI", Value: "true",
 			},
 		},
+		VolumeMounts: []v1.VolumeMount{
+			{
+				Name:      JobVolumeName,
+				MountPath: "/__w",
+			},
+			{
+				Name:      JobVolumeName,
+				MountPath: "/__e",
+				SubPath:   "externals",
+			},
+			{
+				Name:      JobVolumeName,
+				MountPath: "/github/home",
+				SubPath:   "_temp/_github_home",
+			},
+			{
+				Name:      JobVolumeName,
+				MountPath: "/github/workflow",
+				SubPath:   "_temp/_github_workflow",
+			},
+		},
 	}
-	for k, v := range args.Container.EnvironmentVariables {
+
+	for k, v := range cont.EnvironmentVariables {
 		jobContainer.Env = append(jobContainer.Env, v1.EnvVar{Name: k, Value: v})
 	}
-	if args.Container.WorkingDirectory != "" {
-		jobContainer.WorkingDir = args.Container.WorkingDirectory
+
+	if cont.WorkingDirectory != "" {
+		jobContainer.WorkingDir = cont.WorkingDirectory
 	}
+
 	podSpec := &v1.Pod{
 		ObjectMeta: v1Meta.ObjectMeta{
-			Name: podName,
+			Name: c.GetRunnerPodName() + "-workflow",
 			Labels: map[string]string{
-				"runner-pod": c.getRunnerPodName(),
+				"runner-pod": c.GetRunnerPodName(),
 			},
 		},
 		Spec: v1.PodSpec{
 			RestartPolicy: v1.RestartPolicyNever,
 			Containers:    []v1.Container{jobContainer},
+			Volumes: []v1.Volume{
+				{
+					Name: JobVolumeName,
+					VolumeSource: v1.VolumeSource{
+						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+							ClaimName: c.GetVolumeClaimName(),
+						},
+					},
+				},
+			},
 		},
 	}
 	if os.Getenv("ENV_USE_KUBE_SCHEDULER") == "true" {
@@ -104,7 +160,7 @@ func (c *K8sClient) CreatePod(args types.InputArgs) (string, error) {
 								{
 									Key:      "kubernetes.io/hostname",
 									Operator: v1.NodeSelectorOpIn,
-									Values:   []string{c.getRunnerPodName()},
+									Values:   []string{c.GetRunnerPodName()},
 								},
 							},
 						},
@@ -113,17 +169,10 @@ func (c *K8sClient) CreatePod(args types.InputArgs) (string, error) {
 			},
 		}
 	} else {
-		podSpec.Spec.NodeName, _ = c.GetPodNodeName(c.getRunnerPodName())
+		podSpec.Spec.NodeName, _ = c.GetPodNodeName(c.GetRunnerPodName())
 	}
 
-	pod, err := c.client.CoreV1().Pods(c.GetNS()).Create(c.ctx, podSpec, v1Meta.CreateOptions{})
-	if err != nil {
-		return "", err
-	}
-	if err = c.waitForPodReady(pod.Name); err != nil {
-		return "", err
-	}
-	return pod.Name, nil
+	return podSpec
 }
 
 func (c *K8sClient) ExecStepInPod(name string, command string, args []string) (string, error) {
@@ -223,11 +272,18 @@ func (c *K8sClient) waitForPodReady(name string) error {
 
 func (c *K8sClient) PrunePods() error {
 	podList, err := c.client.CoreV1().Pods(c.GetNS()).List(c.ctx, v1Meta.ListOptions{
-		LabelSelector: "runner-pod=" + c.getRunnerPodName(),
+		LabelSelector: "runner-pod=" + c.GetRunnerPodName(),
 	})
 	if err != nil {
-		re
-
+		return err
+	}
+	for _, pod := range podList.Items {
+		slog.Info("Pruning pod", "pod", pod.Name)
+		err = c.DeletePod(pod.Name)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

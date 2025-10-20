@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"log/slog"
 	"os"
 
 	v1Meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,10 +23,22 @@ func (c *K8sClient) GetPodNodeName(mname string) (string, error) {
 	return pod.Spec.NodeName, nil
 }
 
-func (c *K8sClient) getRunnerPodName() string {
+func (c *K8sClient) GetRunnerPodName() string {
 	name := os.Getenv("ACTIONS_RUNNER_POD_NAME")
 	if name == "" {
 		name = "local-pod"
 	}
 	return name
+}
+
+func (c *K8sClient) GetVolumeClaimName() string {
+	name := os.Getenv("ACTIONS_RUNNER_CLAIM_NAME")
+	if name == "" {
+		return c.GetRunnerPodName() + "-work"
+	}
+	return name
+}
+
+func (c *K8sClient) checkPermissions() {
+	slog.Warn("TODO: Implement permission check for creating pods")
 }
