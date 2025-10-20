@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-runner
+  namespace: github-runner
+  labels:
+    app: github-runner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: github-runner
+  template:
+    metadata:
+      labels:
+        app: github-runner
+    spec:
+      serviceAccountName: gr-sa
+      volumes:
+        - ephemeral:
+            volumeClaimTemplate:
+              spec:
+                accessModes: ["ReadWriteOnce"]
+                resources:
+                  requests:
+                    storage: 10Gi
+          name: work
+      containers:
+        - name: github-runner
+          image: runner:latest
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: work
+              mountPath: /actions-runner/_work
+              readOnly: false
+          env:
+            - name: RUNNER_WORKDIR
+              value: /actions-runner/_work
+            - name: RUNNER_NAME
+              value: mwork-kind
+            - name: ACTIONS_RUNNER_KUBERNETES_NAMESPACE
+              value: github-runner
+            - name: ACTIONS_RUNNER_CONTAINER_HOOKS
+              value: /hook/hook.sh
+            - name: REPO_URL
+              value: https://github.com/marcusramberg/gh-sandbox
+            - name: LABELS
+              value: self-hosted
+            - name: ACTIONS_RUNNER_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: gh-pat
+                  key: pat

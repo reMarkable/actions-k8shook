@@ -12,7 +12,13 @@ import (
 	"github.com/reMarkable/k8s-hook/pkg/types"
 )
 
+var version = "dev"
+
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "version" {
+		fmt.Println("k8s-hook version:", version)
+		os.Exit(0)
+	}
 	if os.Getenv("DEBUG_HOOK") == "1" {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	}

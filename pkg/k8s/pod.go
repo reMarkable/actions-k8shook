@@ -66,6 +66,7 @@ func NewK8sClient() (*K8sClient, error) {
 
 func (c *K8sClient) CreatePod(args types.InputArgs) (string, error) {
 	podSpec := c.preparePodSpec(args.Container)
+	copyExternals()
 
 	pod, err := c.client.CoreV1().Pods(c.GetNS()).Create(c.ctx, podSpec, v1Meta.CreateOptions{})
 	if err != nil {
@@ -175,27 +176,37 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition) *v1.Pod {
 	return podSpec
 }
 
-func (c *K8sClient) ExecStepInPod(name string, command string, args []string) (string, error) {
+func (c *K8sClient) ExecStepInPod(name string, args types.InputArgs) error {
+	containerPath, runnerPath, err := c.writeRunScript(args)
+	defer func() {
+		err := os.Remove(runnerPath)
+		if err != nil {
+			slog.Warn("Failed to remove temporary run script", "err", err)
+		}
+	}()
+	if err != nil {
+		slog.Error("Failed to write run script", "err", err)
+		return err
+	}
 	req := c.client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(name).
 		Namespace(c.GetNS()).
 		SubResource("exec")
-	cl := []string{command}
 	req.VersionedParams(&v1.PodExecOptions{
 		Container: "job",
-		Command:   append(cl, args...),
+		Command:   []string{"sh", "-e", containerPath},
 		Stdin:     false,
 		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,
 	}, scheme.ParameterCodec)
 
-	slog.Debug("trying to exec", "req", req.URL().String(), "name", name, "command", command, "args", args)
+	slog.Debug("trying to exec", "req", req.URL().String(), "name", name, "command", containerPath)
 	exec, err := remotecommand.NewSPDYExecutor(c.config, "POST", req.URL())
 	if err != nil {
 		slog.Error("Failed to setup remote executor", "err", err)
-		return "", err
+		return err
 	}
 
 	opt := remotecommand.StreamOptions{
@@ -208,10 +219,10 @@ func (c *K8sClient) ExecStepInPod(name string, command string, args []string) (s
 	defer cancel()
 	if err := exec.StreamWithContext(cancelCtx, opt); err != nil {
 		slog.Error("Failed to stream context", "err", err)
-		return "", err
+		return err
 	}
 
-	return "", nil
+	return nil
 }
 
 func (c *K8sClient) waitForPodReady(name string) error {
@@ -237,7 +248,7 @@ func (c *K8sClient) waitForPodReady(name string) error {
 
 	informer := factory.Core().V1().Pods().Informer()
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(oldObj, newObj any) {
 			pod := newObj.(*v1.Pod)
 			slog.Debug("Pod status changed", "pod", pod.Name, "status", pod.Status.Phase)
@@ -262,6 +273,9 @@ func (c *K8sClient) waitForPodReady(name string) error {
 			}
 		},
 	})
+	if err != nil {
+		return fmt.Errorf("failed to add event handler: %w", err)
+	}
 	factory.Start(ctx.Done())
 	<-ctx.Done() // Wait until pod is running, failed, or timeout
 	if ctx.Err() == context.DeadlineExceeded && err == nil {
