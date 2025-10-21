@@ -14,4 +14,4 @@ RUN mkdir /hook
 ADD hook.sh /hook/hook.sh
 COPY --from=builder /app/hook /hook/hook
 RUN chmod 755 /hook/*
-ENV DEBUG_HOOK=1
+# ENV DEBUG_HOOK=1
