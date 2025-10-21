@@ -8,17 +8,9 @@ jobs:
     strategy:
       matrix:
         go-version: [1.25]
-        os: [linux, darwin]
+        os: [linux]
         arch: [amd64, arm64]
         include:
-          - os: darwin
-            arch: amd64
-            goos: darwin
-            goarch: amd64
-          - os: darwin
-            arch: arm64
-            goos: darwin
-            goarch: arm64
           - os: linux
             arch: amd64
             goos: linux
@@ -35,12 +27,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v5
       - name: Set version
-        id: set_version
+        id: version
         run: |
           echo "version=$(git describe --tags --always)" >> $GITHUB_ENV
       - name: Build
         run: |
-          env GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -v -ldflags="-X main.version={{steps.set_version.outputs.version steps. -w -s" hook hook.go
+          env GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -v -ldflags="-X main.version=${{ steps.version.outputs.version }} -w -s" -o hook hook.go
       - name: Package Binary
         run: |
           tar -czf hook.tgz hook hook.sh
@@ -51,5 +43,5 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./hook.tgz
-          asset_name: actions-k8shook-${{ matrix.os }}-${{ matrix.arch }}-{{ steps.set_version.outputs.version }} .tgz
+          asset_name: actions-k8shook-${{ matrix.os }}-${{ matrix.arch }}-${{ steps.version.outputs.version }}.tgz
           asset_content_type: application/octet-stream
