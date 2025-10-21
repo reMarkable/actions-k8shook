@@ -10,6 +10,7 @@
     k9s
     kind
     kubernetes-helm
+    prek
     stern
   ];
 }

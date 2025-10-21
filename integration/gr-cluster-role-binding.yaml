@@ -3,10 +3,10 @@ kind: ClusterRoleBinding
 metadata:
   name: pod-handler-binding
   namespace: github-runner
-roleRef: 
+roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: pod-handler 
+  name: pod-handler
 subjects:
 - kind: ServiceAccount
   name: gr-sa

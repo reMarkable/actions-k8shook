@@ -10,6 +10,7 @@ import (
 )
 
 func TestCopyExternals(t *testing.T) {
+	t.Parallel()
 	workspace := t.TempDir()
 	if err := os.Setenv("RUNNER_WORKSPACE", workspace); err != nil {
 		t.Fatalf("Failed to set RUNNER_WORKSPACE: %v", err)
@@ -29,7 +30,7 @@ func TestCopyExternals(t *testing.T) {
 	}
 	testFile := filepath.Join(srcExternals, "test.txt")
 	content := []byte("externals content")
-	if err := os.WriteFile(testFile, content, 0o644); err != nil {
+	if err := os.WriteFile(testFile, content, 0o600); err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
 
@@ -48,6 +49,7 @@ func TestCopyExternals(t *testing.T) {
 }
 
 func TestWriteRunScript(t *testing.T) {
+	t.Parallel()
 	args := types.InputArgs{
 		ContainerDefinition: types.ContainerDefinition{
 			PrependPath:          []string{"/usr/local/bin", "/custom/bin"},
@@ -95,6 +97,7 @@ func TestWriteRunScript(t *testing.T) {
 }
 
 func TestScriptEnvironment(t *testing.T) {
+	t.Parallel()
 	env := map[string]string{
 		"FOO": `bar"baz$qux\test`,
 		"BAR": "simple",
@@ -119,6 +122,7 @@ func TestScriptEnvironment(t *testing.T) {
 }
 
 func TestCopyFile(t *testing.T) {
+	t.Parallel()
 	srcFile, err := os.CreateTemp("", "srcfile")
 	if err != nil {
 		t.Fatalf("Failed to create temp source file: %v", err)
@@ -168,6 +172,7 @@ func TestCopyFile(t *testing.T) {
 }
 
 func TestCopyDir(t *testing.T) {
+	t.Parallel()
 	srcDir := t.TempDir()
 	dstDir := filepath.Join(t.TempDir(), "dstdir")
 
@@ -182,10 +187,10 @@ func TestCopyDir(t *testing.T) {
 	rootContent := []byte("root file content")
 	nestedContent := []byte("nested file content")
 
-	if err := os.WriteFile(rootFile, rootContent, 0o644); err != nil {
+	if err := os.WriteFile(rootFile, rootContent, 0o600); err != nil {
 		t.Fatalf("Failed to write root file: %v", err)
 	}
-	if err := os.WriteFile(nestedFile, nestedContent, 0o644); err != nil {
+	if err := os.WriteFile(nestedFile, nestedContent, 0o600); err != nil {
 		t.Fatalf("Failed to write nested file: %v", err)
 	}
 

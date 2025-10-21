@@ -33,6 +33,8 @@ type K8sClient struct {
 	ctx    context.Context
 }
 
+var ErrPodTimeout = errors.New("timeout waiting for pod to be ready")
+
 const JobVolumeName = "work"
 
 func NewK8sClient() (*K8sClient, error) {
@@ -275,8 +277,8 @@ func (c *K8sClient) waitForPodReady(name string) error {
 	}
 	factory.Start(ctx.Done())
 	<-ctx.Done() // Wait until pod is running, failed, or timeout
-	if ctx.Err() == context.DeadlineExceeded && err == nil {
-		return fmt.Errorf("timeout waiting for %d seconds for pod to be ready", timeout)
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return fmt.Errorf("timeout waiting for %d seconds for pod to be ready: %w", timeout, ErrPodTimeout)
 	}
 	return err
 }

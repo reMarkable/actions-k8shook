@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -13,6 +14,11 @@ import (
 	"github.com/reMarkable/k8s-hook/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	v1Meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var (
+	ErrPodStartup = errors.New("pod failed to start")
+	ErrValidation = errors.New("validation error")
 )
 
 func (c *K8sClient) GetNS() string {
@@ -160,18 +166,18 @@ func podEventHandler(cancel context.CancelFunc, errPtr *error) func(oldObj, newO
 			slog.Debug("Container state", "name", c.Name, "state", c.State)
 			if c.State.Waiting != nil && c.State.Waiting.Reason == "ImagePullBackOff" {
 				slog.Error("Runner failed to pull image", "pod", pod.Name, "reason", c.State.Waiting.Reason, "message", c.State.Waiting.Message)
-				*errPtr = fmt.Errorf("failed to pull image: %s", c.State.Waiting.Message)
+				*errPtr = fmt.Errorf("%w: failed to pull image: %s", ErrPodStartup, c.State.Waiting.Message)
 				cancel()
 			}
 			if c.State.Waiting != nil && c.State.Waiting.Reason == "CrashLoopBackOff" {
 				slog.Error("Runner image crashing on startup", "pod", pod.Name, "reason", c.State.Waiting.Reason, "message", c.State.Waiting.Message)
-				*errPtr = fmt.Errorf("image crashing on startup: %s", c.State.Waiting.Message)
+				*errPtr = fmt.Errorf("%w: image crashing on startup: %s", ErrPodStartup, c.State.Waiting.Message)
 				cancel()
 			}
 		}
 		if pod.Status.Phase == v1.PodRunning || pod.Status.Phase == v1.PodFailed {
 			if pod.Status.Phase == v1.PodFailed {
-				*errPtr = fmt.Errorf("pod failed")
+				*errPtr = fmt.Errorf("%w: pod failed", ErrPodStartup)
 			}
 			cancel()
 		}
@@ -183,7 +189,7 @@ func scriptEnvironment(env map[string]string) (string, error) {
 	envstr.WriteString("env")
 	for k, v := range env {
 		if strings.ContainsAny(k, `"'=$`) {
-			return "", fmt.Errorf("invalid character [\"'=$] in environment variable key: %s", k)
+			return "", fmt.Errorf("%w: invalid character [\"'=$] in environment variable key: %s", ErrValidation, k)
 		}
 		v = strings.ReplaceAll(v, `\`, `\\`)
 		v = strings.ReplaceAll(v, `"`, `\"`)

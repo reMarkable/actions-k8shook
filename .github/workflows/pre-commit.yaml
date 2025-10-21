@@ -1,0 +1,30 @@
+name: Linters
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  prek:
+    runs-on: medium-linux-arm64
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+      - uses: reMarkable/actions/setup-hadolint@1a3b7eb48965b4daead59f8f732ed77cc9a76685 # v5.29.3
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          # renovate: datasource=github-releases depName=hashicorp/terraform
+          terraform_version: v1.13.3
+          terraform_wrapper: false
+      - uses: terraform-linters/setup-tflint@ae78205cfffec9e8d93fd2b3115c7e9d3166d4b6 # v5.0.0
+        with:
+          # renovate: datasource=github-releases depName=terraform-linters/tflint
+          tflint_version: v0.59.1
+      - name: Setup prek
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/j178/prek/releases/download/v0.2.0-alpha.3/prek-installer.sh | sh
+      - name: Run prek
+        run: prek run --all-files --show-diff-on-failure
+        env:
+          SKIP: no-commit-to-branch # Allow prek to run in main

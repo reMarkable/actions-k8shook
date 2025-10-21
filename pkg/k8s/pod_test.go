@@ -7,6 +7,7 @@ import (
 )
 
 func TestK8sClient_waitForPodReady(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -17,6 +18,7 @@ func TestK8sClient_waitForPodReady(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			c, err := NewK8sClient()
 			if err != nil {
 				t.Fatalf("could not construct receiver type: %v", err)

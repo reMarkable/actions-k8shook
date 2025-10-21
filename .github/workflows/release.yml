@@ -1,9 +1,7 @@
 name: Build and Release
-
 on:
   release:
     types: [created]
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,26 +27,29 @@ jobs:
             arch: arm64
             goos: linux
             goarch: arm64
-
     steps:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
-
       - name: Check out code
         uses: actions/checkout@v5
-
+      - name: Set version
+        id: set_version
+        run: |
+          echo "version=$(git describe --tags --always)" >> $GITHUB_ENV
       - name: Build
         run: |
-          env GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -v -ldflags="-X main.version=$(git describe --tags --always) -w -s" actions-k8shook-${{ matrix.os }}-${{ matrix.arch }} hook.go
-
+          env GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -v -ldflags="-X main.version={{steps.set_version.outputs.version steps. -w -s" hook hook.go
+      - name: Package Binary
+        run: |
+          tar -czf hook.tgz hook hook.sh
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./actions-k8shook-{{ matrix.os }}-${{ matrix.arch }}
-          asset_name: actions-k8shook--${{ matrix.os }}-${{ matrix.arch }}
+          asset_path: ./hook.tgz
+          asset_name: actions-k8shook-${{ matrix.os }}-${{ matrix.arch }}-{{ steps.set_version.outputs.version }} .tgz
           asset_content_type: application/octet-stream
