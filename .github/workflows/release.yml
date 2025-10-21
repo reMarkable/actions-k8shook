@@ -29,7 +29,7 @@ jobs:
       - name: Set version
         id: version
         run: |
-          echo "version=$(git describe --tags --always)" >> $GITHUB_ENV
+          echo "version=$(git describe --tags --always)" >> $GITHUB_OUTPUT
       - name: Build
         run: |
           env GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -v -ldflags="-X main.version=${{ steps.version.outputs.version }} -w -s" -o hook hook.go
