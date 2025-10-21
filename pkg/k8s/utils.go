@@ -64,7 +64,7 @@ func copyExternals() {
 // returns the path to the script in the container and the local path of the script file, or error if any.
 func (c *K8sClient) writeRunScript(args types.InputArgs) (string, string, error) {
 	prependPath := strings.Join(args.PrependPath, ":")
-	cl := append([]string{args.Entrypoint}, args.EntrypointArgs...)
+	cl := strings.Join(append([]string{args.Entrypoint}, args.EntrypointArgs...), " ")
 	scriptEnv, err := scriptEnvironment(args.EnvironmentVariables)
 	if err != nil {
 		return "", "", err
