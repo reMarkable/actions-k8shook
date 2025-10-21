@@ -16,7 +16,7 @@ var version = "dev"
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "version" {
-		fmt.Println("k8s-hook version:", version)
+		fmt.Println("actions-k8shook version:", version)
 		os.Exit(0)
 	}
 	if os.Getenv("DEBUG_HOOK") == "1" {
