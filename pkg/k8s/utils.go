@@ -1,14 +1,17 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/reMarkable/k8s-hook/pkg/types"
+	v1 "k8s.io/api/core/v1"
 	v1Meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -45,19 +48,8 @@ func (c *K8sClient) GetVolumeClaimName() string {
 }
 
 func (c *K8sClient) checkPermissions() {
+	// FIXME: Implement permission checks
 	slog.Warn("TODO: Implement permission check for creating pods")
-}
-
-// copyExternals copies the externals directory into the workspace directory.
-func copyExternals() {
-	workspace := os.Getenv("RUNNER_WORKSPACE")
-	if workspace != "" {
-		slog.Info("Copying externals to workspace", "workspace", workspace)
-		err := copyDir(filepath.Join(workspace, "../../externals"), filepath.Join(workspace, "../externals"))
-		if err != nil {
-			slog.Error("Failed to copy externals", "error", err)
-		}
-	}
 }
 
 // writeRunScript generates a shell script that sets up the environment and runs the specified entrypoint with its arguments.
@@ -86,22 +78,6 @@ func (c *K8sClient) writeRunScript(args types.InputArgs) (string, string, error)
 	return "/__w/_temp/" + filepath.Base(f.Name()), f.Name(), nil
 }
 
-func scriptEnvironment(env map[string]string) (string, error) {
-	var envstr strings.Builder
-	envstr.WriteString("env")
-	for k, v := range env {
-		if strings.ContainsAny(k, `"'=$`) {
-			return "", fmt.Errorf("invalid character [\"'=$] in environment variable key: %s", k)
-		}
-		v = strings.ReplaceAll(v, `\`, `\\`)
-		v = strings.ReplaceAll(v, `"`, `\"`)
-		v = strings.ReplaceAll(v, `$`, `\$`)
-		v = strings.ReplaceAll(v, "`", "\\`")
-		envstr.WriteString(fmt.Sprintf(` "%s=%s"`, k, v))
-	}
-	return envstr.String(), nil
-}
-
 func copyDir(src string, dst string) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -118,6 +94,18 @@ func copyDir(src string, dst string) error {
 		// Copy file
 		return copyFile(path, targetPath, info.Mode())
 	})
+}
+
+// copyExternals copies the externals directory into the workspace directory.
+func copyExternals() {
+	workspace := os.Getenv("RUNNER_WORKSPACE")
+	if workspace != "" {
+		slog.Info("Copying externals to workspace", "workspace", workspace)
+		err := copyDir(filepath.Join(workspace, "../../externals"), filepath.Join(workspace, "../externals"))
+		if err != nil {
+			slog.Error("Failed to copy externals", "error", err)
+		}
+	}
 }
 
 func copyFile(src, dst string, mode os.FileMode) error {
@@ -143,4 +131,65 @@ func copyFile(src, dst string, mode os.FileMode) error {
 		return err
 	}
 	return os.Chmod(dst, mode)
+}
+
+func getPrepareJobTimeout() int {
+	const defaultTimeout = 600
+	t, ok := os.LookupEnv("ACTIONS_RUNNER_PREPARE_JOB_TIMEOUT_SECONDS")
+	if ok {
+		convTimeout, convErr := strconv.Atoi(t)
+		if convErr != nil {
+			slog.Info("Invalid timeout value, using default of 600 seconds")
+			return defaultTimeout
+		}
+		return convTimeout
+	}
+	slog.Info("Using default timeout of 600 seconds for preparing job pod")
+	return defaultTimeout
+}
+
+func podEventHandler(cancel context.CancelFunc, errPtr *error) func(oldObj, newObj any) {
+	return func(oldObj, newObj any) {
+		pod, ok := newObj.(*v1.Pod)
+		if !ok {
+			slog.Error("Received non-pod object in UpdateFunc")
+			return
+		}
+		slog.Debug("Pod status changed", "pod", pod.Name, "status", pod.Status.Phase)
+		for _, c := range pod.Status.ContainerStatuses {
+			slog.Debug("Container state", "name", c.Name, "state", c.State)
+			if c.State.Waiting != nil && c.State.Waiting.Reason == "ImagePullBackOff" {
+				slog.Error("Runner failed to pull image", "pod", pod.Name, "reason", c.State.Waiting.Reason, "message", c.State.Waiting.Message)
+				*errPtr = fmt.Errorf("failed to pull image: %s", c.State.Waiting.Message)
+				cancel()
+			}
+			if c.State.Waiting != nil && c.State.Waiting.Reason == "CrashLoopBackOff" {
+				slog.Error("Runner image crashing on startup", "pod", pod.Name, "reason", c.State.Waiting.Reason, "message", c.State.Waiting.Message)
+				*errPtr = fmt.Errorf("image crashing on startup: %s", c.State.Waiting.Message)
+				cancel()
+			}
+		}
+		if pod.Status.Phase == v1.PodRunning || pod.Status.Phase == v1.PodFailed {
+			if pod.Status.Phase == v1.PodFailed {
+				*errPtr = fmt.Errorf("pod failed")
+			}
+			cancel()
+		}
+	}
+}
+
+func scriptEnvironment(env map[string]string) (string, error) {
+	var envstr strings.Builder
+	envstr.WriteString("env")
+	for k, v := range env {
+		if strings.ContainsAny(k, `"'=$`) {
+			return "", fmt.Errorf("invalid character [\"'=$] in environment variable key: %s", k)
+		}
+		v = strings.ReplaceAll(v, `\`, `\\`)
+		v = strings.ReplaceAll(v, `"`, `\"`)
+		v = strings.ReplaceAll(v, `$`, `\$`)
+		v = strings.ReplaceAll(v, "`", "\\`")
+		envstr.WriteString(fmt.Sprintf(` "%s=%s"`, k, v))
+	}
+	return envstr.String(), nil
 }

@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/reMarkable/k8s-hook/pkg/types"
@@ -30,8 +29,8 @@ import (
 
 type K8sClient struct {
 	client *kubernetes.Clientset
-	ctx    context.Context
 	config *rest.Config
+	ctx    context.Context
 }
 
 const JobVolumeName = "work"
@@ -80,6 +79,80 @@ func (c *K8sClient) CreatePod(args types.InputArgs) (string, error) {
 		return "", err
 	}
 	return pod.Name, nil
+}
+
+func (c *K8sClient) ExecStepInPod(name string, args types.InputArgs) error {
+	containerPath, runnerPath, err := c.writeRunScript(args)
+	defer func() {
+		err := os.Remove(runnerPath)
+		if err != nil {
+			slog.Warn("Failed to remove temporary run script", "err", err)
+		}
+	}()
+	if err != nil {
+		slog.Error("Failed to write run script", "err", err)
+		return err
+	}
+	req := c.client.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(name).
+		Namespace(c.GetNS()).
+		SubResource("exec")
+	req.VersionedParams(&v1.PodExecOptions{
+		Container: "job",
+		Command:   []string{"sh", "-e", containerPath},
+		Stdin:     false,
+		Stdout:    true,
+		Stderr:    true,
+		TTY:       false,
+	}, scheme.ParameterCodec)
+
+	slog.Debug("trying to exec", "req", req.URL().String(), "name", name, "command", containerPath)
+	exec, err := remotecommand.NewSPDYExecutor(c.config, "POST", req.URL())
+	if err != nil {
+		slog.Error("Failed to setup remote executor", "err", err)
+		return err
+	}
+
+	opt := remotecommand.StreamOptions{
+		Stdin:  nil,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+		Tty:    false,
+	}
+	cancelCtx, cancel := context.WithCancel(c.ctx)
+	defer cancel()
+	if err := exec.StreamWithContext(cancelCtx, opt); err != nil {
+		slog.Error("Failed to stream context", "err", err)
+		return err
+	}
+
+	return nil
+}
+
+func (c *K8sClient) PrunePods() error {
+	podList, err := c.client.CoreV1().Pods(c.GetNS()).List(c.ctx, v1Meta.ListOptions{
+		LabelSelector: "runner-pod=" + c.GetRunnerPodName(),
+	})
+	if err != nil {
+		return err
+	}
+	for _, pod := range podList.Items {
+		slog.Info("Pruning pod", "pod", pod.Name)
+		err = c.DeletePod(pod.Name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *K8sClient) DeletePod(name string) error {
+	err := c.client.CoreV1().Pods(c.GetNS()).Delete(c.ctx, name, v1Meta.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition) *v1.Pod {
@@ -176,64 +249,10 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition) *v1.Pod {
 	return podSpec
 }
 
-func (c *K8sClient) ExecStepInPod(name string, args types.InputArgs) error {
-	containerPath, runnerPath, err := c.writeRunScript(args)
-	defer func() {
-		err := os.Remove(runnerPath)
-		if err != nil {
-			slog.Warn("Failed to remove temporary run script", "err", err)
-		}
-	}()
-	if err != nil {
-		slog.Error("Failed to write run script", "err", err)
-		return err
-	}
-	req := c.client.CoreV1().RESTClient().Post().
-		Resource("pods").
-		Name(name).
-		Namespace(c.GetNS()).
-		SubResource("exec")
-	req.VersionedParams(&v1.PodExecOptions{
-		Container: "job",
-		Command:   []string{"sh", "-e", containerPath},
-		Stdin:     false,
-		Stdout:    true,
-		Stderr:    true,
-		TTY:       false,
-	}, scheme.ParameterCodec)
-
-	slog.Debug("trying to exec", "req", req.URL().String(), "name", name, "command", containerPath)
-	exec, err := remotecommand.NewSPDYExecutor(c.config, "POST", req.URL())
-	if err != nil {
-		slog.Error("Failed to setup remote executor", "err", err)
-		return err
-	}
-
-	opt := remotecommand.StreamOptions{
-		Stdin:  nil,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-		Tty:    false,
-	}
-	cancelCtx, cancel := context.WithCancel(c.ctx)
-	defer cancel()
-	if err := exec.StreamWithContext(cancelCtx, opt); err != nil {
-		slog.Error("Failed to stream context", "err", err)
-		return err
-	}
-
-	return nil
-}
-
 func (c *K8sClient) waitForPodReady(name string) error {
 	var err error
-	t := os.Getenv("ACTIONS_RUNNER_PREPARE_JOB_TIMEOUT_SECONDS")
+	timeout := getPrepareJobTimeout()
 
-	timeout, convErr := strconv.Atoi(t)
-	if convErr != nil {
-		slog.Info("Using default timeout of 600 seconds for preparing job pod")
-		timeout = 600
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
@@ -249,29 +268,7 @@ func (c *K8sClient) waitForPodReady(name string) error {
 	informer := factory.Core().V1().Pods().Informer()
 
 	_, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		UpdateFunc: func(oldObj, newObj any) {
-			pod := newObj.(*v1.Pod)
-			slog.Debug("Pod status changed", "pod", pod.Name, "status", pod.Status.Phase)
-			for _, c := range pod.Status.ContainerStatuses {
-				slog.Debug("Container state", "name", c.Name, "state", c.State)
-				if c.State.Waiting != nil && c.State.Waiting.Reason == "ImagePullBackOff" {
-					slog.Error("Runner failed to pull image", "pod", pod.Name, "reason", c.State.Waiting.Reason, "message", c.State.Waiting.Message)
-					err = fmt.Errorf("failed to pull image: %s", c.State.Waiting.Message)
-					cancel()
-				}
-				if c.State.Waiting != nil && c.State.Waiting.Reason == "CrashLoopBackOff" {
-					slog.Error("Runner image crashing on startup", "pod", pod.Name, "reason", c.State.Waiting.Reason, "message", c.State.Waiting.Message)
-					err = fmt.Errorf("image crashing on startup: %s", c.State.Waiting.Message)
-					cancel()
-				}
-			}
-			if pod.Status.Phase == v1.PodRunning || pod.Status.Phase == v1.PodFailed {
-				if pod.Status.Phase == v1.PodFailed {
-					err = fmt.Errorf("pod failed")
-				}
-				cancel()
-			}
-		},
+		UpdateFunc: podEventHandler(cancel, &err),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to add event handler: %w", err)
@@ -282,29 +279,4 @@ func (c *K8sClient) waitForPodReady(name string) error {
 		return fmt.Errorf("timeout waiting for %d seconds for pod to be ready", timeout)
 	}
 	return err
-}
-
-func (c *K8sClient) PrunePods() error {
-	podList, err := c.client.CoreV1().Pods(c.GetNS()).List(c.ctx, v1Meta.ListOptions{
-		LabelSelector: "runner-pod=" + c.GetRunnerPodName(),
-	})
-	if err != nil {
-		return err
-	}
-	for _, pod := range podList.Items {
-		slog.Info("Pruning pod", "pod", pod.Name)
-		err = c.DeletePod(pod.Name)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *K8sClient) DeletePod(name string) error {
-	err := c.client.CoreV1().Pods(c.GetNS()).Delete(c.ctx, name, v1Meta.DeleteOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
 }
