@@ -6,9 +6,10 @@
 {
   languages.go.enable = true;
   packages = with pkgs; [
-    kind
-    k9s
     github-runner
+    k9s
+    kind
     kubernetes-helm
+    stern
   ];
 }
