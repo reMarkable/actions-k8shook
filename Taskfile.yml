@@ -1,0 +1,34 @@
+version: "3"
+tasks:
+  run:
+    desc: Run binary
+    cmds:
+      - go run hook.go
+  build:
+    desc: Run binary
+    cmds:
+      - go build hook.go
+  test:
+    desc: Run tests
+    cmds:
+      - go test -race -cover ./...
+  test:cover:
+    desc: Run test coverage analysis
+    silent: true
+    cmds:
+      - go test ./... -coverprofile=coverage.out
+      - go tool cover -html=coverage.out
+  lint:
+    desc: Lint the code
+    silent: true
+    cmds:
+      - golangci-lint run
+  help:
+    desc: Display this help
+    silent: true
+    cmds:
+      - task --list
+  default:
+    silent: true
+    cmds:
+      - task: help
