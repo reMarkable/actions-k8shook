@@ -9,10 +9,20 @@ workflow developers.
 
 To use this hook, you'll need to make a release available in your runner image
 somewhere and set the ENV variable `ACTIONS_RUNNER_CONTAINER_HOOKS_PATH` to
-point to hook.sh - It's meant to be a drop-in replacement for the original
+point to `hook.sh` - It's meant to be a drop-in replacement for the original
 node implementation, with one exception: We use the `watch` API of the pods to
 get real-time updates on the pod status instead of polling, so the runner
 service account needs this permission in addition to the original ones.
+
+## Supported ENV variables
+
+- `DEBUG_HOOK` - Output additional debug information to the logs.
+- `ENV_USE_KUBE_SCHEDULER` - Rely on affinity to tie the worker pod to the same
+  node as the runner pod. By default, the hook set the nodeName field of the
+  pod based on the runner pod's node.
+- `ACTIONS_RUNNER_CLAIM_NAME` - override the default claim name used to find
+  the runner pod. By default it will be `[runner-pod]-work` which works out of
+  the box for ARC.
 
 ## Limitations
 
