@@ -26,6 +26,13 @@ func (c *K8sClient) GetNS() string {
 	if namespace != "" {
 		return namespace
 	}
+	namespaceBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	if err != nil {
+		slog.Warn("Failed to read namespace from ACTIONS_RUNNER_KUBERNETES_NAMESPACE or service account, defaulting to 'default'", "error", err)
+	} else {
+		return strings.TrimSpace(string(namespaceBytes))
+	}
+
 	return "default"
 }
 
