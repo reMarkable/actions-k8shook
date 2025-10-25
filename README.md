@@ -29,7 +29,7 @@ service account needs this permission in addition to the original ones.
 So far this hook does not support:
 
 - Services
-- Container Actions
+- Hook-Extensions
 
 This will likely be added in future releases.
 
