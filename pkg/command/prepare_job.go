@@ -18,7 +18,7 @@ func PrepareJob(input types.ContainerHookInput) {
 		slog.Error("Failed to talk to kubernetes", "err", err)
 		os.Exit(1)
 	}
-	podName, err := k8s.CreatePod(input.Args)
+	podName, err := k8s.CreatePod(input.Args, false)
 	if err != nil {
 		// FIXME: We need more robust error handling here
 		slog.Error("Failed to create pod", "err", err)

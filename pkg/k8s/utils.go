@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -159,6 +160,15 @@ func getPrepareJobTimeout() int {
 	}
 	slog.Info("Using default timeout of 600 seconds for preparing job pod")
 	return defaultTimeout
+}
+
+func podPostfix() string {
+	letters := []rune("abcdefghijklmnopqrstuvwxyz0123456789")
+	post := make([]rune, 5)
+	for i := range post {
+		post[i] = letters[rand.Intn(len(letters))] // #nosec G404
+	}
+	return string(post)
 }
 
 func podEventHandler(cancel context.CancelFunc, errPtr *error) func(oldObj, newObj any) {

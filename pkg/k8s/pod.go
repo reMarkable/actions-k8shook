@@ -65,9 +65,11 @@ func NewK8sClient() (*K8sClient, error) {
 	return &K8sClient{client: clientset, ctx: context.Background(), config: config}, nil
 }
 
-func (c *K8sClient) CreatePod(args types.InputArgs) (string, error) {
-	podSpec := c.preparePodSpec(args.Container)
-	copyExternals()
+func (c *K8sClient) CreatePod(args types.InputArgs, containerStep bool) (string, error) {
+	podSpec := c.preparePodSpec(args.Container, containerStep)
+	if !containerStep {
+		copyExternals()
+	}
 
 	pod, err := c.client.CoreV1().Pods(c.GetNS()).Create(c.ctx, podSpec, v1Meta.CreateOptions{})
 	if err != nil {
@@ -103,10 +105,8 @@ func (c *K8sClient) ExecStepInPod(name string, args types.InputArgs) error {
 	req.VersionedParams(&v1.PodExecOptions{
 		Container: "job",
 		Command:   []string{"sh", "-e", containerPath},
-		Stdin:     false,
 		Stdout:    true,
 		Stderr:    true,
-		TTY:       false,
 	}, scheme.ParameterCodec)
 
 	slog.Debug("trying to exec", "req", req.URL().String(), "name", name, "command", containerPath)
@@ -157,14 +157,12 @@ func (c *K8sClient) DeletePod(name string) error {
 	return nil
 }
 
-func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition) *v1.Pod {
+func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, step bool) *v1.Pod {
 	jobContainer := v1.Container{
-		Name:  "job",
-		Image: cont.Image,
-		// FIXME:: Should not be set in production
-		ImagePullPolicy: v1.PullIfNotPresent,
-		Command:         []string{"tail"},
-		Args:            []string{"-f", "/dev/null"},
+		Name:    "job",
+		Image:   cont.Image,
+		Command: []string{"tail"},
+		Args:    []string{"-f", "/dev/null"},
 		Env: []v1.EnvVar{
 			{
 				Name: "GITHUB_ACTIONS", Value: "true",
@@ -180,11 +178,6 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition) *v1.Pod {
 			},
 			{
 				Name:      JobVolumeName,
-				MountPath: "/__e",
-				SubPath:   "externals",
-			},
-			{
-				Name:      JobVolumeName,
 				MountPath: "/github/home",
 				SubPath:   "_temp/_github_home",
 			},
@@ -195,6 +188,9 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition) *v1.Pod {
 			},
 		},
 	}
+	if os.Getenv("ENV_DISABLE_IMAGE_PULL") != "true" {
+		jobContainer.ImagePullPolicy = v1.PullIfNotPresent
+	}
 
 	for k, v := range cont.EnvironmentVariables {
 		jobContainer.Env = append(jobContainer.Env, v1.EnvVar{Name: k, Value: v})
@@ -203,10 +199,34 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition) *v1.Pod {
 	if cont.WorkingDirectory != "" {
 		jobContainer.WorkingDir = cont.WorkingDirectory
 	}
-
+	var name string
+	if step {
+		name = c.GetRunnerPodName() + "-step-" + podPostfix()
+		jobContainer.VolumeMounts = append([]v1.VolumeMount{
+			{
+				Name:      JobVolumeName,
+				MountPath: "/github/workspace",
+				SubPath:   "_temp",
+			},
+			{
+				Name:      JobVolumeName,
+				MountPath: "/github/file_commands",
+				SubPath:   "_temp/_runner_file_commands",
+			},
+		}, jobContainer.VolumeMounts...)
+	} else {
+		name = c.GetRunnerPodName() + "-workflow"
+		jobContainer.VolumeMounts = append([]v1.VolumeMount{
+			{
+				Name:      JobVolumeName,
+				MountPath: "/__e",
+				SubPath:   "externals",
+			},
+		}, jobContainer.VolumeMounts...)
+	}
 	podSpec := &v1.Pod{
 		ObjectMeta: v1Meta.ObjectMeta{
-			Name: c.GetRunnerPodName() + "-workflow",
+			Name: name,
 			Labels: map[string]string{
 				"runner-pod": c.GetRunnerPodName(),
 			},
