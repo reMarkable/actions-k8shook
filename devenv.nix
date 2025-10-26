@@ -12,5 +12,9 @@
     kubernetes-helm
     prek
     stern
+    go-task
   ];
+  enterTest = ''
+    task test
+  '';
 }
