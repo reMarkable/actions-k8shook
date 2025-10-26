@@ -12,17 +12,17 @@ import (
 	"github.com/reMarkable/k8s-hook/pkg/types"
 )
 
-func PrepareJob(input types.ContainerHookInput) {
+func PrepareJob(input types.ContainerHookInput) int {
 	k8s, err := k8s.NewK8sClient()
 	if err != nil {
 		slog.Error("Failed to talk to kubernetes", "err", err)
-		os.Exit(1)
+		return 1
 	}
 	podName, err := k8s.CreatePod(input.Args, false)
 	if err != nil {
 		// FIXME: We need more robust error handling here
 		slog.Error("Failed to create pod", "err", err)
-		os.Exit(1)
+		return 1
 	}
 	slog.Info("Created pod", "pod", podName)
 	response := types.ResponseType{
@@ -39,8 +39,9 @@ func PrepareJob(input types.ContainerHookInput) {
 	}
 	if err := writeResponse(input.ResponseFile, response); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write response: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
+	return 0
 }
 
 func writeResponse(file string, response types.ResponseType) error {

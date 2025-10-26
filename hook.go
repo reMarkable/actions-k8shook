@@ -22,17 +22,18 @@ func main() {
 	if os.Getenv("DEBUG_HOOK") == "1" {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	}
+	var retCode int
 	if checkPipedInput() {
 		hookInput := getInput()
 		switch hookInput.Command {
 		case "prepare_job":
-			command.PrepareJob(hookInput)
+			retCode = command.PrepareJob(hookInput)
 		case "cleanup_job":
-			command.CleanupJob(hookInput)
+			retCode = command.CleanupJob(hookInput)
 		case "run_container_step":
-			command.RunContainerStep(hookInput)
+			retCode = command.RunContainerStep(hookInput)
 		case "run_script_step":
-			command.RunScriptStep(hookInput)
+			retCode = command.RunScriptStep(hookInput)
 		default:
 			slog.Error("Unknown command", "command", hookInput.Command)
 			os.Exit(1)
@@ -40,6 +41,7 @@ func main() {
 	} else {
 		fmt.Println("No piped input detected. This hook is intended to be run by github actions runner.")
 	}
+	os.Exit(retCode)
 }
 
 func getInput() types.ContainerHookInput {
