@@ -2,13 +2,12 @@ package command
 
 import (
 	"log/slog"
-	"os"
 
 	"github.com/reMarkable/k8s-hook/pkg/k8s"
 	"github.com/reMarkable/k8s-hook/pkg/types"
 )
 
-func CleanupJob(input types.ContainerHookInput) {
+func CleanupJob(input types.ContainerHookInput) int {
 	k8s, err := k8s.NewK8sClient()
 	if err != nil {
 		slog.Error("Failed to talk to kubernetes", "err", err)
@@ -16,6 +15,7 @@ func CleanupJob(input types.ContainerHookInput) {
 	deleteErr := k8s.DeletePod(input.State["jobPod"])
 	if err != nil {
 		slog.Error("Failed to clean up pod", "err", deleteErr)
-		os.Exit(1)
+		return 1
 	}
+	return 0
 }
