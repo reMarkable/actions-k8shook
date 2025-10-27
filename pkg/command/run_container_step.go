@@ -19,6 +19,7 @@ func RunContainerStep(input types.ContainerHookInput) int {
 	k8s, err := k8s.NewK8sClient()
 	if err != nil {
 		slog.Error("Failed to talk to kubernetes", "err", err)
+		return 1
 	}
 	args := input.Args
 	args.Container = args.ContainerDefinition
