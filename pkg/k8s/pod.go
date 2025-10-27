@@ -28,7 +28,7 @@ import (
 )
 
 type K8sClient struct {
-	client *kubernetes.Clientset
+	client kubernetes.Interface
 	config *rest.Config
 	ctx    context.Context
 }
