@@ -128,7 +128,7 @@ func copyFile(src, dst string, mode os.FileMode) error {
 		return err
 	}
 	defer func() {
-		if err := in.Close(); err != nil {
+		if err = in.Close(); err != nil {
 			slog.Warn("Failed to close source file", "error", err)
 		}
 	}()

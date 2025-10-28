@@ -95,7 +95,7 @@ func (c *K8sClient) CreatePod(args types.InputArgs, podType PodType) (string, er
 func (c *K8sClient) ExecStepInPod(name string, args types.InputArgs) error {
 	containerPath, runnerPath, err := c.writeRunScript(args)
 	defer func() {
-		err := os.Remove(runnerPath)
+		err = os.Remove(runnerPath)
 		if err != nil {
 			slog.Warn("Failed to remove temporary run script", "err", err)
 		}
