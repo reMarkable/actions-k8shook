@@ -35,6 +35,13 @@ type K8sClient struct {
 
 var ErrPodTimeout = errors.New("timeout waiting for pod to be ready")
 
+type PodType int
+
+const (
+	PodTypeJob PodType = iota
+	PodTypeContainerStep
+)
+
 const JobVolumeName = "work"
 
 func NewK8sClient() (*K8sClient, error) {
@@ -65,9 +72,9 @@ func NewK8sClient() (*K8sClient, error) {
 	return &K8sClient{client: clientset, ctx: context.Background(), config: config}, nil
 }
 
-func (c *K8sClient) CreatePod(args types.InputArgs, containerStep bool) (string, error) {
-	podSpec := c.preparePodSpec(args.Container, containerStep)
-	if !containerStep {
+func (c *K8sClient) CreatePod(args types.InputArgs, podType PodType) (string, error) {
+	podSpec := c.preparePodSpec(args.Container, podType)
+	if podType == PodTypeJob {
 		copyExternals()
 	}
 
@@ -157,7 +164,7 @@ func (c *K8sClient) DeletePod(name string) error {
 	return nil
 }
 
-func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, step bool) *v1.Pod {
+func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, podType PodType) *v1.Pod {
 	jobContainer := v1.Container{
 		Name:    "job",
 		Image:   cont.Image,
@@ -200,7 +207,7 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, step bool) *v
 		jobContainer.WorkingDir = cont.WorkingDirectory
 	}
 	var name string
-	if step {
+	if podType == PodTypeContainerStep {
 		name = c.GetRunnerPodName() + "-step-" + podPostfix()
 		jobContainer.VolumeMounts = append([]v1.VolumeMount{
 			{

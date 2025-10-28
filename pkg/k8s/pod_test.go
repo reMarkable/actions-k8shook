@@ -52,7 +52,7 @@ func TestK8sClient_CreatePodSpec(t *testing.T) {
 			"GITHUB_WORKSPACE": "/tmp/workspace",
 		},
 	}
-	podSpec := c.preparePodSpec(input, false)
+	podSpec := c.preparePodSpec(input, PodTypeJob)
 	if podSpec.Spec.Containers[0].Image != "example-image" {
 		t.Errorf("expected image 'example-image', got '%s'", podSpec.Spec.Containers[0].Image)
 	}
@@ -63,7 +63,7 @@ func TestK8sClient_CreatePodSpec(t *testing.T) {
 			t.Errorf("job expected mount path '%s', got '%s'", expectedPaths[i], vol.MountPath)
 		}
 	}
-	jobSpec := c.preparePodSpec(input, true)
+	jobSpec := c.preparePodSpec(input, PodTypeContainerStep)
 	expectedJobPaths := []string{"/github/workspace", "/github/file_commands", "/__w", "/github/home", "/github/workflow"}
 	jobVolumes := jobSpec.Spec.Containers[0].VolumeMounts
 	for i, vol := range jobVolumes {
