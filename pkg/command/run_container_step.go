@@ -29,7 +29,7 @@ func RunContainerStep(input types.ContainerHookInput) int {
 		return 1
 	}
 	defer func() {
-		err := k.DeletePod(podName)
+		err = k.DeletePod(podName)
 		if err != nil {
 			slog.Error("Failed to clean up pod", "err", err)
 		}
