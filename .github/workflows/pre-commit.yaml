@@ -1,30 +1,18 @@
 name: Linters
-
 on:
   push:
     branches: [main]
   pull_request:
-
 jobs:
   prek:
-    runs-on: medium-linux-arm64
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
-      - uses: reMarkable/actions/setup-hadolint@659fa80a7c79d3a2e731ea2b20ebecdddbcaafba # v5.30.2
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+      - uses: actions/setup-go@v6
         with:
-          # renovate: datasource=github-releases depName=hashicorp/terraform
-          terraform_version: v1.13.4
-          terraform_wrapper: false
-      - uses: terraform-linters/setup-tflint@4cb9feea73331a35b422df102992a03a44a3bb33 # v6.2.1
+          go-version: '1.25.4'
+      - uses: golangci/golangci-lint-action@v8
+      - uses: j178/prek-action@v1
         with:
-          # renovate: datasource=github-releases depName=terraform-linters/tflint
-          tflint_version: v0.59.1
-      - name: Setup prek
-        run: |
-          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/j178/prek/releases/download/v0.2.0-alpha.3/prek-installer.sh | sh
-      - name: Run prek
-        run: prek run --all-files --show-diff-on-failure
-        env:
-          SKIP: no-commit-to-branch # Allow prek to run in main
+          extra-args: --all-files --skip no-commit-to-branch --skip "golangci-lint-full" --skip "golangci-lint-fmt" --skip "golangci-lint-config-verify"
