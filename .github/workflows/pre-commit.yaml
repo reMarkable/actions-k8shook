@@ -10,14 +10,14 @@ jobs:
     runs-on: medium-linux-arm64
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+      - uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
       - uses: reMarkable/actions/setup-hadolint@1a3b7eb48965b4daead59f8f732ed77cc9a76685 # v5.29.3
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           # renovate: datasource=github-releases depName=hashicorp/terraform
           terraform_version: v1.13.3
           terraform_wrapper: false
-      - uses: terraform-linters/setup-tflint@ae78205cfffec9e8d93fd2b3115c7e9d3166d4b6 # v5.0.0
+      - uses: terraform-linters/setup-tflint@4cb9feea73331a35b422df102992a03a44a3bb33 # v6.2.1
         with:
           # renovate: datasource=github-releases depName=terraform-linters/tflint
           tflint_version: v0.59.1
