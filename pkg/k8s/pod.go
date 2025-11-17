@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/reMarkable/k8s-hook/pkg/types"
@@ -208,12 +209,17 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, podType PodTy
 	}
 	var name string
 	if podType == PodTypeContainerStep {
+		workspace := os.Getenv("GITHUB_WORKSPACE")
+		// remove anything before _work to get the subpath
+		i := strings.LastIndex(workspace, "_work/")
+		workspaceRelativePath := workspace[i+len("_work/"):]
+
 		name = c.GetRunnerPodName() + "-step-" + podPostfix()
 		jobContainer.VolumeMounts = append([]v1.VolumeMount{
 			{
 				Name:      JobVolumeName,
 				MountPath: "/github/workspace",
-				SubPath:   "_temp",
+				SubPath:   workspaceRelativePath,
 			},
 			{
 				Name:      JobVolumeName,
