@@ -34,7 +34,10 @@ type K8sClient struct {
 	ctx    context.Context
 }
 
-var ErrPodTimeout = errors.New("timeout waiting for pod to be ready")
+var (
+	ErrPodTimeout   = errors.New("timeout waiting for pod to be ready")
+	ErrNotSupported = errors.New("feature not supported in kubernetes hook")
+)
 
 type PodType int
 
@@ -77,6 +80,9 @@ func (c *K8sClient) CreatePod(args types.InputArgs, podType PodType) (string, er
 	podSpec := c.preparePodSpec(args.Container, podType)
 	if podType == PodTypeJob {
 		copyExternals()
+	}
+	if args.Container.CreateOptions != "" {
+		return "", fmt.Errorf("%w: CreateOptions provided: %s", ErrNotSupported, args.Container.CreateOptions)
 	}
 
 	pod, err := c.client.CoreV1().Pods(c.GetNS()).Create(c.ctx, podSpec, v1Meta.CreateOptions{})
@@ -280,7 +286,18 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, podType PodTy
 	} else {
 		podSpec.Spec.NodeName, _ = c.GetPodNodeName(c.GetRunnerPodName())
 	}
-
+	if cont.Registry != nil {
+		secretName, err := c.createImagePullSecret(cont)
+		if err != nil {
+			slog.Warn("Failed to create pull secret", "err", err)
+		} else {
+			podSpec.Spec.ImagePullSecrets = []v1.LocalObjectReference{
+				{
+					Name: secretName,
+				},
+			}
+		}
+	}
 	return podSpec
 }
 
