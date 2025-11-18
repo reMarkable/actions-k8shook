@@ -17,6 +17,7 @@ func (c *K8sClient) PruneSecrets() error {
 	if err != nil {
 		return err
 	}
+
 	for _, secret := range secretList.Items {
 		slog.Info("Pruning secret", "secret", secret.Name)
 		err = c.client.CoreV1().Secrets(c.GetNS()).Delete(c.ctx, secret.Name, v1Meta.DeleteOptions{})
@@ -24,6 +25,7 @@ func (c *K8sClient) PruneSecrets() error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -49,5 +51,6 @@ func (c *K8sClient) createImagePullSecret(cont types.ContainerDefinition) (strin
 	if err != nil {
 		return "", err
 	}
+
 	return s.Name, nil
 }

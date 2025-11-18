@@ -12,15 +12,18 @@ func RunContainerStep(input types.ContainerHookInput) int {
 		slog.Error("Self hosted container steps requires entrypoint to be set")
 		return 1
 	}
+
 	if input.Args.Dockerfile != "" {
 		slog.Error("Self hosted container steps do not support Docker builder at this time")
 		return 1
 	}
+
 	k, err := k8s.NewK8sClient()
 	if err != nil {
 		slog.Error("Failed to talk to kubernetes", "err", err)
 		return 1
 	}
+
 	args := input.Args
 	args.Container = args.ContainerDefinition
 	podName, err := k.CreatePod(args, k8s.PodTypeContainerStep)
@@ -28,6 +31,7 @@ func RunContainerStep(input types.ContainerHookInput) int {
 		slog.Error("Failed to create pod", "err", err)
 		return 1
 	}
+
 	defer func() {
 		err = k.DeletePod(podName)
 		if err != nil {
@@ -39,5 +43,6 @@ func RunContainerStep(input types.ContainerHookInput) int {
 		slog.Error("Failed to run container", "err", err)
 		return 1
 	}
+
 	return 0
 }

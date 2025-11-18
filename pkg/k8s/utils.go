@@ -27,6 +27,7 @@ func (c *K8sClient) GetNS() string {
 	if namespace != "" {
 		return namespace
 	}
+
 	namespaceBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 	if err != nil {
 		slog.Warn("Failed to read namespace from ACTIONS_RUNNER_KUBERNETES_NAMESPACE or service account, defaulting to 'default'", "error", err)
@@ -42,6 +43,7 @@ func (c *K8sClient) GetPodNodeName(mname string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return pod.Spec.NodeName, nil
 }
 
@@ -58,6 +60,7 @@ func (c *K8sClient) GetVolumeClaimName() string {
 	if name == "" {
 		return c.GetRunnerPodName() + "-work"
 	}
+
 	return name
 }
 
@@ -85,10 +88,12 @@ func (c *K8sClient) writeRunScript(args types.InputArgs) (string, string, error)
 	if err != nil {
 		return "", "", err
 	}
+
 	_, err = io.WriteString(f, script)
 	if err != nil {
 		return "", "", err
 	}
+
 	return "/__w/_temp/" + filepath.Base(f.Name()), f.Name(), nil
 }
 
@@ -97,14 +102,17 @@ func copyDir(src string, dst string) error {
 		if err != nil {
 			return err
 		}
+
 		relPath, err := filepath.Rel(src, path)
 		if err != nil {
 			return err
 		}
+
 		targetPath := filepath.Join(dst, relPath)
 		if info.IsDir() {
 			return os.MkdirAll(targetPath, info.Mode())
 		}
+
 		// Copy file
 		return copyFile(path, targetPath, info.Mode())
 	})
@@ -127,6 +135,7 @@ func copyFile(src, dst string, mode os.FileMode) error {
 	if err != nil {
 		return err
 	}
+
 	defer func() {
 		if err = in.Close(); err != nil {
 			slog.Warn("Failed to close source file", "error", err)
@@ -136,6 +145,7 @@ func copyFile(src, dst string, mode os.FileMode) error {
 	if err != nil {
 		return err
 	}
+
 	defer func() {
 		if err := out.Close(); err != nil {
 			slog.Warn("Failed to close destination file", "error", err)
@@ -144,6 +154,7 @@ func copyFile(src, dst string, mode os.FileMode) error {
 	if _, err := io.Copy(out, in); err != nil {
 		return err
 	}
+
 	return os.Chmod(dst, mode)
 }
 
@@ -156,8 +167,10 @@ func getPrepareJobTimeout() int {
 			slog.Info("Invalid timeout value, using default of 600 seconds")
 			return defaultTimeout
 		}
+
 		return convTimeout
 	}
+
 	slog.Info("Using default timeout of 600 seconds for preparing job pod")
 	return defaultTimeout
 }
@@ -178,6 +191,7 @@ func podEventHandler(cancel context.CancelFunc, errPtr *error) func(oldObj, newO
 			slog.Error("Received non-pod object in UpdateFunc")
 			return
 		}
+
 		slog.Debug("Pod status changed", "pod", pod.Name, "status", pod.Status.Phase)
 		for _, c := range pod.Status.ContainerStatuses {
 			slog.Debug("Container state", "name", c.Name, "state", c.State)
@@ -214,5 +228,6 @@ func scriptEnvironment(env map[string]string) (string, error) {
 		v = strings.ReplaceAll(v, "`", "\\`")
 		envstr.WriteString(fmt.Sprintf(` "%s=%s"`, k, v))
 	}
+
 	return envstr.String(), nil
 }

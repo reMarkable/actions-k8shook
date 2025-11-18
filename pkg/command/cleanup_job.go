@@ -17,10 +17,12 @@ func CleanupJob(input types.ContainerHookInput) int {
 		slog.Error("Failed to prune secrets", "err", err)
 		return 1
 	}
+
 	err = k8s.DeletePod(input.State["jobPod"])
 	if err != nil {
 		slog.Error("Failed to clean up pod", "err", err)
 		return 1
 	}
+
 	return 0
 }

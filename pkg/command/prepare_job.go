@@ -18,12 +18,14 @@ func PrepareJob(input types.ContainerHookInput) int {
 		slog.Error("Failed to talk to kubernetes", "err", err)
 		return 1
 	}
+
 	podName, err := k.CreatePod(input.Args, k8s.PodTypeJob)
 	if err != nil {
 		// FIXME: We need more robust error handling here
 		slog.Error("Failed to create pod", "err", err)
 		return 1
 	}
+
 	slog.Info("Created pod", "pod", podName)
 	response := types.ResponseType{
 		State: types.ResponseState{
@@ -41,6 +43,7 @@ func PrepareJob(input types.ContainerHookInput) int {
 		fmt.Fprintf(os.Stderr, "Failed to write response: %v\n", err)
 		return 1
 	}
+
 	return 0
 }
 
@@ -50,13 +53,16 @@ func writeResponse(file string, response types.ResponseType) error {
 	if err != nil {
 		return err
 	}
+
 	fh, err := os.Create(file)
 	if err != nil {
 		return err
 	}
+
 	_, err = io.Writer.Write(fh, body)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
