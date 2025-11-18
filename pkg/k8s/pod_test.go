@@ -33,6 +33,7 @@ func TestK8sClient_waitForPodReady(t *testing.T) {
 				}
 				return
 			}
+
 			if tt.wantErr {
 				t.Fatal("waitForPodReady() succeeded unexpectedly")
 			}

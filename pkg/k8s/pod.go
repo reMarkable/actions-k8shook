@@ -68,11 +68,13 @@ func NewK8sClient() (*K8sClient, error) {
 			return nil, err
 		}
 	}
+
 	// creates the clientset
 	clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
+
 	return &K8sClient{client: clientset, ctx: context.Background(), config: config}, nil
 }
 
@@ -93,9 +95,11 @@ func (c *K8sClient) CreatePod(args types.InputArgs, podType PodType) (string, er
 		}
 		return "", err
 	}
+
 	if err = c.waitForPodReady(pod.Name); err != nil {
 		return "", err
 	}
+
 	return pod.Name, nil
 }
 
@@ -111,6 +115,7 @@ func (c *K8sClient) ExecStepInPod(name string, args types.InputArgs) error {
 		slog.Error("Failed to write run script", "err", err)
 		return err
 	}
+
 	req := c.client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(name).
@@ -153,6 +158,7 @@ func (c *K8sClient) PrunePods() error {
 	if err != nil {
 		return err
 	}
+
 	for _, pod := range podList.Items {
 		slog.Info("Pruning pod", "pod", pod.Name)
 		err = c.DeletePod(pod.Name)
@@ -160,6 +166,7 @@ func (c *K8sClient) PrunePods() error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -168,6 +175,7 @@ func (c *K8sClient) DeletePod(name string) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -325,10 +333,12 @@ func (c *K8sClient) waitForPodReady(name string) error {
 	if err != nil {
 		return fmt.Errorf("failed to add event handler: %w", err)
 	}
+
 	factory.Start(ctx.Done())
 	<-ctx.Done() // Wait until pod is running, failed, or timeout
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		return fmt.Errorf("timeout waiting for %d seconds for pod to be ready: %w", timeout, ErrPodTimeout)
 	}
+
 	return err
 }

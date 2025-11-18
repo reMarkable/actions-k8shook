@@ -13,10 +13,12 @@ func RunScriptStep(input types.ContainerHookInput) int {
 		slog.Error("Failed to talk to kubernetes", "err", err)
 		return 1
 	}
+
 	err = k8s.ExecStepInPod(input.State["jobPod"], input.Args)
 	if err != nil {
 		slog.Error("Failed to execute step in pod", "err", err)
 		return 1
 	}
+
 	return 0
 }
