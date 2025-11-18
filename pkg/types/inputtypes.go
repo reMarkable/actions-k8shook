@@ -15,7 +15,7 @@ type InputArgs struct {
 }
 
 type ContainerDefinition struct {
-	CreateOptions        map[string]any    `json:"createOptions"`
+	CreateOptions        string            `json:"createOptions"`
 	Dockerfile           string            `json:"dockerfile"`
 	Entrypoint           string            `json:"entryPoint"`
 	EntrypointArgs       []string          `json:"entryPointArgs"`
@@ -24,7 +24,7 @@ type ContainerDefinition struct {
 	WorkingDirectory     string            `json:"workingDirectory"`
 	Image                string            `json:"image"`
 	PortMappings         []map[int]int     `json:"portMappings"`
-	Registry             string            `json:"registry"`
+	Registry             map[string]string `json:"registry"`
 	SystemMountVolumes   []MountVolume     `json:"systemMountVolumes"`
 	UserMountVolumes     []MountVolume     `json:"userMountVolumes"`
 }
