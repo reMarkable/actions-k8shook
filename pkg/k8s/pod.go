@@ -129,7 +129,7 @@ func (c *K8sClient) ExecStepInPod(name string, args types.InputArgs) error {
 	}, scheme.ParameterCodec)
 
 	slog.Debug("trying to exec", "req", req.URL().String(), "name", name, "command", containerPath)
-	exec, err := remotecommand.NewSPDYExecutor(c.config, "POST", req.URL())
+	exec, err := remotecommand.NewWebSocketExecutor(c.config, "GET", req.URL().String())
 	if err != nil {
 		slog.Error("Failed to setup remote executor", "err", err)
 		return err
