@@ -8,6 +8,11 @@ tasks:
     desc: Run binary
     cmds:
       - go build hook.go
+  rebuild-kind:
+    desc: Rebuild image and load into kind cluster
+    cmds:
+      - docker build . -t runner && kind load docker-image runner:latest --name kind                                                                                               devenv-shell-env
+      - kubectl get pods -n github-runner -l app=github-runner -o name |xargs -I {} kubectl -n github-runner delete {}                                                             devenv-shell-env
   test:
     desc: Run tests
     cmds:

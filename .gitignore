@@ -10,3 +10,4 @@ devenv.local.yaml
 
 # pre-commit
 vendor
+k8s-hook
