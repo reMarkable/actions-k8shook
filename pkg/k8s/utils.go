@@ -93,6 +93,9 @@ func (c *K8sClient) writeRunScript(args types.InputArgs) (string, string, error)
 	if err != nil {
 		return "", "", err
 	}
+	if err := os.Chmod(f.Name(), 0o755); err != nil {
+		return "", "", err
+	}
 
 	return "/__w/_temp/" + filepath.Base(f.Name()), f.Name(), nil
 }
