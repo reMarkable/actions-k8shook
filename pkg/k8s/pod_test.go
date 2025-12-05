@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"os"
 	"testing"
 
 	"github.com/reMarkable/k8s-hook/pkg/types"
@@ -43,6 +44,7 @@ func TestK8sClient_waitForPodReady(t *testing.T) {
 
 func TestK8sClient_CreatePodSpec(t *testing.T) {
 	t.Parallel()
+	os.Setenv("ACTIONS_RUNNER_KUBERNETES_NAMESPACE", "default")
 	c := K8sClient{
 		client: fake.NewSimpleClientset(),
 		ctx:    t.Context(),
@@ -53,20 +55,20 @@ func TestK8sClient_CreatePodSpec(t *testing.T) {
 			"GITHUB_WORKSPACE": "/tmp/workspace",
 		},
 	}
-	podSpec := c.preparePodSpec(input, PodTypeJob)
-	if podSpec.Spec.Containers[0].Image != "example-image" {
-		t.Errorf("expected image 'example-image', got '%s'", podSpec.Spec.Containers[0].Image)
+	pod := c.preparePodSpec(input, PodTypeJob)
+	if pod.Spec.Containers[0].Image != "example-image" {
+		t.Errorf("expected image 'example-image', got '%s'", pod.Spec.Containers[0].Image)
 	}
 	expectedPaths := []string{"/__e", "/__w", "/github/home", "/github/workflow"}
-	volumes := podSpec.Spec.Containers[0].VolumeMounts
+	volumes := pod.Spec.Containers[0].VolumeMounts
 	for i, vol := range volumes {
 		if vol.MountPath != expectedPaths[i] {
 			t.Errorf("job expected mount path '%s', got '%s'", expectedPaths[i], vol.MountPath)
 		}
 	}
-	jobSpec := c.preparePodSpec(input, PodTypeContainerStep)
+	jobPod := c.preparePodSpec(input, PodTypeContainerStep)
 	expectedJobPaths := []string{"/github/workspace", "/github/file_commands", "/__w", "/github/home", "/github/workflow"}
-	jobVolumes := jobSpec.Spec.Containers[0].VolumeMounts
+	jobVolumes := jobPod.Spec.Containers[0].VolumeMounts
 	for i, vol := range jobVolumes {
 		if vol.MountPath != expectedJobPaths[i] {
 			t.Errorf("job expected mount path '%s', got '%s'", expectedJobPaths[i], vol.MountPath)

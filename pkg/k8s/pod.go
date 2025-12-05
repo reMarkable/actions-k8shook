@@ -224,6 +224,10 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, podType PodTy
 	var name string
 	if podType == PodTypeContainerStep {
 		workspace := os.Getenv("GITHUB_WORKSPACE")
+		if workspace == "" {
+			slog.Warn("GITHUB_WORKSPACE is not set, defaulting to /github/workspace")
+			workspace = "/github/workspace"
+		}
 		// remove anything before _work to get the subpath
 		i := strings.LastIndex(workspace, "_work/")
 		workspaceRelativePath := workspace[i+len("_work/"):]
@@ -251,7 +255,7 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, podType PodTy
 			},
 		}, jobContainer.VolumeMounts...)
 	}
-	podSpec := &v1.Pod{
+	pod := &v1.Pod{
 		ObjectMeta: v1Meta.ObjectMeta{
 			Name: name,
 			Labels: map[string]string{
@@ -274,7 +278,7 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, podType PodTy
 		},
 	}
 	if os.Getenv("ENV_USE_KUBE_SCHEDULER") == "true" {
-		podSpec.Spec.Affinity = &v1.Affinity{
+		pod.Spec.Affinity = &v1.Affinity{
 			NodeAffinity: &v1.NodeAffinity{
 				RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
 					NodeSelectorTerms: []v1.NodeSelectorTerm{
@@ -292,21 +296,27 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, podType PodTy
 			},
 		}
 	} else {
-		podSpec.Spec.NodeName, _ = c.GetPodNodeName(c.GetRunnerPodName())
+		pod.Spec.NodeName, _ = c.GetPodNodeName(c.GetRunnerPodName())
 	}
 	if cont.Registry != nil {
 		secretName, err := c.createImagePullSecret(cont)
 		if err != nil {
 			slog.Warn("Failed to create pull secret", "err", err)
 		} else {
-			podSpec.Spec.ImagePullSecrets = []v1.LocalObjectReference{
+			pod.Spec.ImagePullSecrets = []v1.LocalObjectReference{
 				{
 					Name: secretName,
 				},
 			}
 		}
 	}
-	return podSpec
+	if template := os.Getenv("ENV_HOOK_TEMPLATE_PATH"); template != "" {
+		err := applyTemplateToPod(pod, template)
+		if err != nil {
+			slog.Error("Failed to apply template to container", "err", err, "template", template)
+		}
+	}
+	return pod
 }
 
 func (c *K8sClient) waitForPodReady(name string) error {
