@@ -1,0 +1,18 @@
+metadata:
+  annotations:
+    annotated-by: "extension"
+  labels:
+    labeled-by: "extension"
+spec:
+  serviceAccountName: custom-service-account
+  volumes:
+    - name: custom-volume
+      emptyDir: {}
+  containers:
+    - name: $job
+      env:
+        - name: ENV1
+          value: "value1"
+      volumeMounts:
+        - name: custom-volume
+          mountPath: /custom/path
