@@ -82,6 +82,42 @@ func Test_applyTemplateToPodSpec_WithExampleFile(t *testing.T) {
 	}
 }
 
+func Test_applyMinmalTemplate(t *testing.T) {
+	t.Parallel()
+
+	pod := &v1.Pod{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name:  "job",
+					Image: "test:latest",
+					Env: []v1.EnvVar{
+						{Name: "EXISTING_VAR", Value: "existing-value"},
+					},
+					VolumeMounts: []v1.VolumeMount{
+						{Name: "work", MountPath: "/work"},
+					},
+				},
+			},
+			Volumes: []v1.Volume{
+				{Name: "work", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}},
+			},
+		},
+	}
+
+	templatePath := filepath.Join("..", "..", "examples", "minimal-extension.yaml")
+	err := applyTemplateToPod(pod, templatePath)
+	if err != nil {
+		t.Fatalf("applyTemplateToPodSpec() failed: %v", err)
+	}
+	if len(pod.Spec.Volumes) != 1 {
+		t.Errorf("expected 1 volume, got %d", len(pod.Spec.Volumes))
+	}
+	if pod.Spec.ServiceAccountName != "custom-service-account" {
+		t.Fatalf("expected service account 'custom-service-account', got '%s'", pod.Spec.ServiceAccountName)
+	}
+}
+
 func Test_applyTemplateToPodSpec_FileNotFound(t *testing.T) {
 	t.Parallel()
 
@@ -175,5 +211,15 @@ func Test_applyTemplateToPodSpec_MultipleJobContainers(t *testing.T) {
 
 	if len(pod.Spec.Containers[1].Env) != 0 {
 		t.Errorf("expected sidecar container to remain unchanged, got %d env vars", len(pod.Spec.Containers[1].Env))
+	}
+	pod = v1.Pod{
+		Spec: v1.PodSpec{
+			ServiceAccountName: "runner-sa",
+		},
+	}
+
+	err = applyTemplateToPod(&pod, tmpFile.Name())
+	if err != nil {
+		t.Fatalf("applyTemplateToPodSpec() failed: %v", err)
 	}
 }
