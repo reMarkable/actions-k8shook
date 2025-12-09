@@ -1,0 +1,2 @@
+spec:
+  serviceAccountName: custom-service-account
