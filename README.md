@@ -23,6 +23,10 @@ service account needs this permission in addition to the original ones.
 - `ACTIONS_RUNNER_CLAIM_NAME` - override the default claim name used to find
   the runner pod. By default it will be `[runner-pod]-work` which works out of
   the box for ARC.
+- `ENV_`
+- `ENV_HOOK_DEFAULT_ENTRYPOINT` - Override the default entrypoint used when
+  none is specified in the workflow file. By default, this is required for
+  containter actions
 
 ## Limitations
 

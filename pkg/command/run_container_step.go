@@ -2,6 +2,7 @@ package command
 
 import (
 	"log/slog"
+	"os"
 
 	"github.com/reMarkable/k8s-hook/pkg/k8s"
 	"github.com/reMarkable/k8s-hook/pkg/types"
@@ -9,8 +10,14 @@ import (
 
 func RunContainerStep(input types.ContainerHookInput) int {
 	if input.Args.Entrypoint == "" {
-		slog.Error("Self hosted container steps requires entrypoint to be set")
-		return 1
+		entrypointEnv := os.Getenv("ENV_HOOK_CONTAINER_STEP_ENTRYPOINT")
+		if entrypointEnv != "" {
+			slog.Info("Entrypoint not set, using ENV_HOOK_CONTAINER_STEP_ENTRYPOINT from environment", "entrypoint", entrypointEnv)
+			input.Args.Entrypoint = os.Getenv("ENV_HOOK_DEFAULT_ENTRYPOINT")
+		} else {
+			slog.Error("Self hosted container steps requires entrypoint to be set")
+			return 1
+		}
 	}
 
 	if input.Args.Dockerfile != "" {
