@@ -198,15 +198,21 @@ func podEventHandler(cancel context.CancelFunc, errPtr *error) func(oldObj, newO
 		slog.Debug("Pod status changed", "pod", pod.Name, "status", pod.Status.Phase)
 		for _, c := range pod.Status.ContainerStatuses {
 			slog.Debug("Container state", "name", c.Name, "state", c.State)
-			if c.State.Waiting != nil && c.State.Waiting.Reason == "ImagePullBackOff" {
-				slog.Error("Runner failed to pull image", "pod", pod.Name, "reason", c.State.Waiting.Reason, "message", c.State.Waiting.Message)
-				*errPtr = fmt.Errorf("%w: failed to pull image: %s", ErrPodStartup, c.State.Waiting.Message)
-				cancel()
-			}
-			if c.State.Waiting != nil && c.State.Waiting.Reason == "CrashLoopBackOff" {
-				slog.Error("Runner image crashing on startup", "pod", pod.Name, "reason", c.State.Waiting.Reason, "message", c.State.Waiting.Message)
-				*errPtr = fmt.Errorf("%w: image crashing on startup: %s", ErrPodStartup, c.State.Waiting.Message)
-				cancel()
+			if c.State.Waiting != nil {
+				switch c.State.Waiting.Reason {
+				case "InvalidImageName":
+					slog.Error("Invalid Image Name Specified", "pod", pod.Name, "reason", c.State.Waiting.Reason, "message", c.State.Waiting.Message)
+					*errPtr = fmt.Errorf("%w: failed to pull image: %s", ErrPodStartup, c.State.Waiting.Message)
+					cancel()
+				case "ImagePullBackOff":
+					slog.Error("Runner failed to pull image", "pod", pod.Name, "reason", c.State.Waiting.Reason, "message", c.State.Waiting.Message)
+					*errPtr = fmt.Errorf("%w: failed to pull image: %s", ErrPodStartup, c.State.Waiting.Message)
+					cancel()
+				case "CrashLoopBackOff":
+					slog.Error("Runner image crashing on startup", "pod", pod.Name, "reason", c.State.Waiting.Reason, "message", c.State.Waiting.Message)
+					*errPtr = fmt.Errorf("%w: image crashing on startup: %s", ErrPodStartup, c.State.Waiting.Message)
+					cancel()
+				}
 			}
 		}
 		if pod.Status.Phase == v1.PodRunning || pod.Status.Phase == v1.PodFailed {
