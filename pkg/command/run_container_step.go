@@ -13,7 +13,7 @@ func RunContainerStep(input types.ContainerHookInput) int {
 		entrypointEnv := os.Getenv("ENV_HOOK_CONTAINER_STEP_ENTRYPOINT")
 		if entrypointEnv != "" {
 			slog.Info("Entrypoint not set, using ENV_HOOK_CONTAINER_STEP_ENTRYPOINT from environment", "entrypoint", entrypointEnv)
-			input.Args.Entrypoint = os.Getenv("ENV_HOOK_DEFAULT_ENTRYPOINT")
+			input.Args.Entrypoint = entrypointEnv
 		} else {
 			slog.Error("Self hosted container steps requires entrypoint to be set")
 			return 1
