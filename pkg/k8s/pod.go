@@ -115,7 +115,14 @@ func (c *K8sClient) ExecStepInPod(name string, args types.InputArgs) error {
 		slog.Error("Failed to write run script", "err", err)
 		return err
 	}
+	err = c.ExecInPod(name, []string{"-e", containerPath})
+	if err != nil {
+		slog.Error("command failed:", "err", err)
+	}
+	return err
+}
 
+func (c *K8sClient) ExecInPod(name string, command []string) error {
 	req := c.client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(name).
@@ -123,12 +130,12 @@ func (c *K8sClient) ExecStepInPod(name string, args types.InputArgs) error {
 		SubResource("exec")
 	req.VersionedParams(&v1.PodExecOptions{
 		Container: "job",
-		Command:   []string{"sh", "-e", containerPath},
+		Command:   append([]string{"sh"}, command...),
 		Stdout:    true,
 		Stderr:    true,
 	}, scheme.ParameterCodec)
 
-	slog.Debug("trying to exec", "req", req.URL().String(), "name", name, "command", containerPath)
+	slog.Debug("trying to exec", "req", req.URL().String(), "name", name, "command", command)
 	exec, err := remotecommand.NewSPDYExecutor(c.config, "POST", req.URL())
 	if err != nil {
 		slog.Error("Failed to setup remote executor", "err", err)
@@ -143,12 +150,7 @@ func (c *K8sClient) ExecStepInPod(name string, args types.InputArgs) error {
 	}
 	cancelCtx, cancel := context.WithCancel(c.ctx)
 	defer cancel()
-	if err := exec.StreamWithContext(cancelCtx, opt); err != nil {
-		slog.Error("Failed to stream context", "err", err)
-		return err
-	}
-
-	return nil
+	return exec.StreamWithContext(cancelCtx, opt)
 }
 
 func (c *K8sClient) PrunePods() error {

@@ -25,6 +25,8 @@ func PrepareJob(input types.ContainerHookInput) int {
 		slog.Error("Failed to create pod", "err", err)
 		return 1
 	}
+	alpineArgs := []string{"-c", "test -f /etc/alpine-release"}
+	isAlpine := k.ExecInPod(podName, alpineArgs)
 
 	slog.Info("Created pod", "pod", podName)
 	response := types.ResponseType{
@@ -37,7 +39,7 @@ func PrepareJob(input types.ContainerHookInput) int {
 				Ports: map[int]int{},
 			},
 		},
-		IsAlpine: false,
+		IsAlpine: isAlpine == nil,
 	}
 	if err := writeResponse(input.ResponseFile, response); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write response: %v\n", err)
