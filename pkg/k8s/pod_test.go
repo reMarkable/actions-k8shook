@@ -20,7 +20,7 @@ func TestK8sClient_waitForPodReady(t *testing.T) {
 		// TODO: Add test cases.
 	}
 	c := K8sClient{
-		client: fake.NewSimpleClientset(),
+		client: fake.NewClientset(),
 		ctx:    t.Context(),
 	}
 	for _, tt := range tests {
@@ -46,7 +46,7 @@ func TestK8sClient_CreatePodSpec(t *testing.T) {
 	t.Parallel()
 	os.Setenv("ACTIONS_RUNNER_KUBERNETES_NAMESPACE", "default")
 	c := K8sClient{
-		client: fake.NewSimpleClientset(),
+		client: fake.NewClientset(),
 		ctx:    t.Context(),
 	}
 	input := types.ContainerDefinition{
