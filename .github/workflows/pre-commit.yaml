@@ -11,7 +11,7 @@ jobs:
       - uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25.5'
+          go-version: '1.25.6'
       - uses: golangci/golangci-lint-action@v9
       - uses: j178/prek-action@v1
         with:
