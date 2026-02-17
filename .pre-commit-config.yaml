@@ -21,7 +21,7 @@ repos:
       - id: check-github-workflows
       - id: check-renovate
   - repo: 'https://github.com/golangci/golangci-lint'
-    rev: v2.6.0
+    rev: v2.10.1
     hooks:
       - id: golangci-lint-full
       - id: golangci-lint-fmt

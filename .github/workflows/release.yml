@@ -32,7 +32,7 @@ jobs:
           echo "version=$(git describe --tags --always)" >> $GITHUB_OUTPUT
       - name: Build
         run: |
-          env GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -v -ldflags="-X main.version=${{ steps.version.outputs.version }} -w -s" -o hook hook.go
+          env CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -v -ldflags="-X main.version=${{ steps.version.outputs.version }} -w -s" -o hook hook.go
       - name: Package Binary
         run: |
           tar -czf hook.tgz hook hook.sh
