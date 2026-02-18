@@ -1,6 +1,10 @@
 version: "2"
 run:
   timeout: "10m"
+  build-tags:
+    - containers_image_openpgp
+    - exclude_graphdriver_btrfs
+    - exclude_graphdriver_devicemapper
 linters:
   enable:
     - bodyclose
@@ -26,6 +30,11 @@ linters:
     - unconvert
     - unparam
   settings:
+    gosec:
+      excludes:
+        - G703 # The new taint analysis isn't smart enough and causes many false positives.
+        - G705 # The new taint analysis isn't smart enough and causes many false positives.
+        - G706 # The new taint analysis isn't smart enough and causes many false positives.
     govet:
       disable:
         - fieldalignment
@@ -41,8 +50,8 @@ linters:
       - linters:
           - govet
         path: (.+)_test\.go
-    # Ignoring HTTP Write errors is common as there is nothing to be done if
-    # Write fails.
+        # Ignoring HTTP Write errors is common as there is nothing to be done if
+        # Write fails.
       - path: (.+)\.go$
         text: Error return value of .(w.Write). is not checked
     paths:
