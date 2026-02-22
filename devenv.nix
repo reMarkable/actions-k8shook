@@ -4,8 +4,12 @@
 }:
 
 {
-  languages.go.enable = true;
+  languages.go = {
+    enable = true;
+    package = pkgs.go_1_26;
+  };
   packages = with pkgs; [
+    golangci-lint
     github-runner
     k9s
     kind
