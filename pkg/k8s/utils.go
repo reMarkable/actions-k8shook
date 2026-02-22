@@ -235,7 +235,10 @@ func scriptEnvironment(env map[string]string) (string, error) {
 		v = strings.ReplaceAll(v, `"`, `\"`)
 		v = strings.ReplaceAll(v, `$`, `\$`)
 		v = strings.ReplaceAll(v, "`", "\\`")
-		envstr.WriteString(fmt.Sprintf(` "%s=%s"`, k, v))
+		_, err := fmt.Fprintf(&envstr, ` "%s=%s"`, k, v)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return envstr.String(), nil
