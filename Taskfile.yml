@@ -6,8 +6,10 @@ tasks:
       - go run hook.go
   build:
     desc: Run binary
+    env:
+      CGO_ENABLED: "0"
     cmds:
-      - go build hook.go
+      - go build  hook.go
   rebuild-kind:
     desc: Rebuild image and load into kind cluster
     cmds:
@@ -16,12 +18,12 @@ tasks:
   test:
     desc: Run tests
     cmds:
-      - go test -race -cover ./...
+      - go test -tags "containers_image_openpgp exclude_graphdriver_btrfs exclude_graphdriver_devicemapper" -race -cover ./...
   test:cover:
     desc: Run test coverage analysis
     silent: true
     cmds:
-      - go test ./... -coverprofile=coverage.out
+      - go test -tags "containers_image_openpgp exclude_graphdriver_btrfs exclude_graphdriver_devicemapper" ./... -coverprofile=coverage.out
       - go tool cover -html=coverage.out
   lint:
     desc: Lint the code
