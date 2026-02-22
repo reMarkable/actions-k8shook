@@ -26,7 +26,14 @@ service account needs this permission in addition to the original ones.
 - `ENV_`
 - `ENV_HOOK_DEFAULT_ENTRYPOINT` - Override the default entrypoint used when
   none is specified in the workflow file. By default, this is required for
-  containter actions
+  container actions.
+- `ENV_HOOK_INSPECT_IMAGE` - **(Experimental)** When set to `1`, the hook will
+  automatically inspect container images to extract the entrypoint from the
+  image configuration. This eliminates the need to manually specify
+  `ENV_HOOK_CONTAINER_STEP_ENTRYPOINT` for most container actions. The hook
+  will fall back to `ENV_HOOK_CONTAINER_STEP_ENTRYPOINT` if image inspection
+  fails or if the image has no entrypoint defined. This feature requires
+  network access to the container registry.
 
 ## Limitations
 
