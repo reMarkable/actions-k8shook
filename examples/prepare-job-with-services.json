@@ -1,0 +1,84 @@
+{
+  "command": "prepare_job",
+  "responseFile": "/tmp/response.json",
+  "args": {
+    "container": {
+      "image": "ubuntu:22.04",
+      "dockerfile": null,
+      "entryPointArgs": [],
+      "entryPoint": null,
+      "workingDirectory": "/__w/myrepo/myrepo",
+      "createOptions": null,
+      "registry": null,
+      "environmentVariables": {
+        "HOME": "/github/home",
+        "DATABASE_URL": "postgresql://localhost:5432/testdb",
+        "REDIS_URL": "redis://localhost:6379"
+      },
+      "portMappings": [],
+      "systemMountVolumes": [
+        {
+          "userProvidedValue": null,
+          "sourceVolumePath": "/home/runner/_work",
+          "targetVolumePath": "/__w",
+          "readOnly": false
+        },
+        {
+          "userProvidedValue": null,
+          "sourceVolumePath": "/home/runner/_work/_temp/_github_home",
+          "targetVolumePath": "/github/home",
+          "readOnly": false
+        }
+      ],
+      "userMountVolumes": []
+    },
+    "services": [
+      {
+        "contextName": "redis",
+        "image": "redis:7",
+        "entryPoint": null,
+        "entryPointArgs": [],
+        "environmentVariables": {
+          "REDIS_PASSWORD": "secret123"
+        },
+        "workingDirectory": "",
+        "portMappings": ["6379"],
+        "registry": null,
+        "systemMountVolumes": [],
+        "userMountVolumes": [],
+        "createOptions": null
+      },
+      {
+        "contextName": "postgres",
+        "image": "postgres:14",
+        "entryPoint": null,
+        "entryPointArgs": [],
+        "environmentVariables": {
+          "POSTGRES_PASSWORD": "password",
+          "POSTGRES_DB": "testdb",
+          "POSTGRES_USER": "testuser"
+        },
+        "workingDirectory": "",
+        "portMappings": ["5432"],
+        "registry": null,
+        "systemMountVolumes": [],
+        "userMountVolumes": [],
+        "createOptions": null
+      },
+      {
+        "contextName": "nginx",
+        "image": "nginx:alpine",
+        "entryPoint": null,
+        "entryPointArgs": [],
+        "environmentVariables": {},
+        "workingDirectory": "",
+        "portMappings": ["8080:80"],
+        "registry": null,
+        "systemMountVolumes": [],
+        "userMountVolumes": [],
+        "createOptions": null
+      }
+    ]
+  },
+  "state": null
+}

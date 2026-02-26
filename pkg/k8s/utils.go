@@ -178,6 +178,19 @@ func getPrepareJobTimeout() int {
 	return defaultTimeout
 }
 
+// parsePort parses a port string to int32
+func parsePort(portStr string) (int32, error) {
+	var port int
+	_, err := fmt.Sscanf(portStr, "%d", &port)
+	if err != nil {
+		return 0, fmt.Errorf("%w: %s", ErrInvalidPortNumber, portStr)
+	}
+	if port < 1 || port > 65535 {
+		return 0, fmt.Errorf("%w: %d", ErrPortOutOfRange, port)
+	}
+	return int32(port), nil
+}
+
 func podPostfix() string {
 	letters := []rune("abcdefghijklmnopqrstuvwxyz0123456789")
 	post := make([]rune, 5)

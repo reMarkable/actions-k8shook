@@ -8,6 +8,27 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// findTargetContainer finds the pod container that matches the extension container name pattern.
+// Returns nil if no match is found.
+// - "$job" matches the first container (job container)
+// - "$<serviceName>" matches service containers by name (without $ prefix)
+func findTargetContainer(podContainers []v1.Container, extensionContainerName string) *v1.Container {
+	if extensionContainerName == "$job" {
+		return &podContainers[0]
+	}
+
+	if len(extensionContainerName) > 1 && extensionContainerName[0] == '$' {
+		serviceName := extensionContainerName[1:]
+		for i := 1; i < len(podContainers); i++ {
+			if podContainers[i].Name == serviceName {
+				return &podContainers[i]
+			}
+		}
+	}
+
+	return nil
+}
+
 func applyTemplateToPod(pod *v1.Pod, template string) error {
 	templateContent, err := os.ReadFile(template)
 	if err != nil {
@@ -37,10 +58,10 @@ func applyTemplateToPod(pod *v1.Pod, template string) error {
 	}
 	if len(podSpec.Containers) != 0 {
 		for _, tContainer := range extensionSpec.Containers {
-			if tContainer.Name == "$job" {
-				jobContainer := &podSpec.Containers[0]
-				jobContainer.Env = append(jobContainer.Env, tContainer.Env...)
-				jobContainer.VolumeMounts = append(jobContainer.VolumeMounts, tContainer.VolumeMounts...)
+			targetContainer := findTargetContainer(podSpec.Containers, tContainer.Name)
+			if targetContainer != nil {
+				targetContainer.Env = append(targetContainer.Env, tContainer.Env...)
+				targetContainer.VolumeMounts = append(targetContainer.VolumeMounts, tContainer.VolumeMounts...)
 			}
 		}
 	}
