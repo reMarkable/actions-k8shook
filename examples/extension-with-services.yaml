@@ -1,0 +1,36 @@
+# Example extension that configures both the job container and service containers
+# This demonstrates how to use $job for the main container and $<serviceName> for services
+metadata:
+  labels:
+    example: "services-extension"
+spec:
+  # Add volumes that can be mounted in services
+  volumes:
+    - name: redis-data
+      emptyDir: {}
+    - name: postgres-data
+      emptyDir: {}
+  containers:
+    # Configure the job container with database connection info
+    - name: $job
+      env:
+        - name: DATABASE_URL
+          value: "postgres://localhost:5432"
+    # Configure the redis service with password and persistent storage
+    - name: $redis
+      env:
+        - name: REDIS_PASSWORD
+          value: "secret"
+      volumeMounts:
+        - name: redis-data
+          mountPath: /data
+    # Configure the postgres service with credentials and persistent storage
+    - name: $postgres
+      env:
+        - name: POSTGRES_PASSWORD
+          value: "password"
+        - name: POSTGRES_DB
+          value: "testdb"
+      volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data

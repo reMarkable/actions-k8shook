@@ -39,8 +39,7 @@ service account needs this permission in addition to the original ones.
 
 So far this hook does not support:
 
-- Services
-- Hook-Extension side cars
+- Hook-Extension side cars (additional containers beyond services defined in workflow)
 
 This will likely be added in future releases.
 

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/reMarkable/k8s-hook/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	v1Meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -29,13 +28,17 @@ func (c *K8sClient) PruneSecrets() error {
 	return nil
 }
 
-func (c *K8sClient) createImagePullSecret(cont types.ContainerDefinition) (string, error) {
-	registryURL := cont.Registry["serverUrl"]
+// createImagePullSecretFromRegistry creates a Kubernetes image pull secret from registry credentials
+func (c *K8sClient) createImagePullSecret(registry map[string]string) (string, error) {
+	if registry == nil {
+		return "", nil
+	}
+	registryURL := registry["serverUrl"]
 	if registryURL == "" {
 		registryURL = "ghcr.io"
 	}
 	authContent := fmt.Sprintf(`{"auths":{"%s":{"username":"%s","password":"%s"}}}`,
-		registryURL, cont.Registry["username"], cont.Registry["password"])
+		registryURL, registry["username"], registry["password"])
 	secret := v1.Secret{
 		Immutable: ptr.To(true),
 		ObjectMeta: v1Meta.ObjectMeta{

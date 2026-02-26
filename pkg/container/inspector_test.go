@@ -131,18 +131,15 @@ func TestGetEntrypoint_InvalidReference(t *testing.T) {
 
 func TestExtractEntrypoint(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name     string
+	tests := map[string]struct {
 		config   *v1.Image
 		expected string
 	}{
-		{
-			name:     "nil config",
+		"nil config": {
 			config:   nil,
 			expected: "",
 		},
-		{
-			name: "empty entrypoint",
+		"empty entrypoint": {
 			config: &v1.Image{
 				Config: v1.ImageConfig{
 					Entrypoint: []string{},
@@ -150,8 +147,7 @@ func TestExtractEntrypoint(t *testing.T) {
 			},
 			expected: "",
 		},
-		{
-			name: "single entrypoint",
+		"single entrypoint": {
 			config: &v1.Image{
 				Config: v1.ImageConfig{
 					Entrypoint: []string{"/bin/sh"},
@@ -159,8 +155,7 @@ func TestExtractEntrypoint(t *testing.T) {
 			},
 			expected: "/bin/sh",
 		},
-		{
-			name: "multiple entrypoint parts",
+		"multiple entrypoint parts": {
 			config: &v1.Image{
 				Config: v1.ImageConfig{
 					Entrypoint: []string{"/bin/sh", "-c"},
@@ -170,8 +165,8 @@ func TestExtractEntrypoint(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			result := extractEntrypoint(tt.config)
