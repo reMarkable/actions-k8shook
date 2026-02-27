@@ -51,6 +51,17 @@ func (i *Inspector) GetEntrypoint(imageRef string, registry map[string]string) (
 		imageRef = "docker://" + imageRef
 	}
 
+	// drop tag if sha is specified, the inspector can't handle both.
+	if strings.Contains(imageRef, "@") {
+		parts := strings.SplitN(imageRef, "@", 2)
+		imageWithoutSHA := parts[0]
+		lastColonIdx := strings.LastIndex(imageWithoutSHA, ":")
+		if lastColonIdx > strings.Index(imageWithoutSHA, "://") {
+			imageRef = imageWithoutSHA[:lastColonIdx] + "@" + parts[1]
+		} else {
+			imageRef = imageWithoutSHA + "@" + parts[1]
+		}
+	}
 	slog.Debug("Inspecting image for entrypoint", "image", imageRef)
 
 	ref, err := alltransports.ParseImageName(imageRef)

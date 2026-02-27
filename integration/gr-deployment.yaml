@@ -46,6 +46,8 @@ spec:
               value: https://github.com/marcusramberg/gh-sandbox
             - name: LABELS
               value: self-hosted
+            - name: ENV_HOOK_INSPECT_IMAGE
+              value: "1"
             - name: ACTIONS_RUNNER_POD_NAME
               valueFrom:
                 fieldRef:
