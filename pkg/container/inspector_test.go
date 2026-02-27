@@ -129,6 +129,30 @@ func TestGetEntrypoint_InvalidReference(t *testing.T) {
 	}
 }
 
+func TestGetEntrypoint_WithSHAAndTag(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	inspector := NewInspector(ctx)
+
+	// Test with both tag and SHA - the tag should be stripped
+	// Using nginx image with a specific SHA (this is a real nginx SHA)
+	entrypoint, err := inspector.GetEntrypoint("docker.io/library/nginx:latest@sha256:447a8665cc1dab95b1ca778e162215839ccbb9189104c79d7ec3a81e14577add", nil)
+	if err != nil {
+		t.Fatalf("Failed to get entrypoint: %v", err)
+	}
+
+	if entrypoint == "" {
+		t.Error("Expected non-empty entrypoint for nginx image")
+	}
+
+	if !strings.Contains(entrypoint, "docker-entrypoint.sh") {
+		t.Errorf("Expected entrypoint to contain docker-entrypoint.sh, got: %s", entrypoint)
+	}
+}
+
 func TestExtractEntrypoint(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
