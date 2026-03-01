@@ -4,7 +4,7 @@ go 1.25.1
 
 require (
 	github.com/opencontainers/go-digest v1.0.0
-	github.com/opencontainers/image-spec v1.1.2-0.20251016170850-26647a49f642
+	github.com/opencontainers/image-spec v1.1.2-0.20260226102121-a4c6ade7bb82
 	go.podman.io/image/v5 v5.38.1-0.20260202154637-0e2aefda57c9
 	k8s.io/api v0.35.1
 	k8s.io/apimachinery v0.35.1
