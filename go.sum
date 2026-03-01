@@ -129,6 +129,8 @@ github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.2-0.20251016170850-26647a49f642 h1:BNZwTO1e0QJV7HVGz/Qw/tyOE/GnooRmuy6qZnhNGCE=
 github.com/opencontainers/image-spec v1.1.2-0.20251016170850-26647a49f642/go.mod h1:GRy5q9c6/vsqXmQ1I6TL1PkhA64F6eXG9fUOQ9tFvm8=
+github.com/opencontainers/image-spec v1.1.2-0.20260226102121-a4c6ade7bb82 h1:E+Fkd2gXu1H0wGsF/81ghtqacuzl+OkuS4rEnGOsTCw=
+github.com/opencontainers/image-spec v1.1.2-0.20260226102121-a4c6ade7bb82/go.mod h1:GRy5q9c6/vsqXmQ1I6TL1PkhA64F6eXG9fUOQ9tFvm8=
 github.com/opencontainers/runtime-spec v1.3.0 h1:YZupQUdctfhpZy3TM39nN9Ika5CBWT5diQ8ibYCRkxg=
 github.com/opencontainers/runtime-spec v1.3.0/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/opencontainers/selinux v1.13.1 h1:A8nNeceYngH9Ow++M+VVEwJVpdFmrlxsN22F+ISDCJE=
