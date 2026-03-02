@@ -574,13 +574,10 @@ func verifyServiceContainers(t *testing.T, pod *v1.Pod, services []types.Service
 				break
 			}
 		}
-		if serviceDef == nil {
-			t.Fatalf("Test setup error: no service definition for %s", serviceName)
-		}
 
 		// Verify image
-		if serviceContainer.Image != serviceDef.Image {
-			t.Errorf("preparePodSpec() service %s image = %s, want %s", serviceName, serviceContainer.Image, serviceDef.Image)
+		if serviceDef == nil || serviceContainer.Image != serviceDef.Image {
+			t.Errorf("preparePodSpec() service %s image = %s, servicedef: %v", serviceName, serviceContainer.Image, serviceDef)
 		}
 
 		// Verify environment variables contain expected ones
