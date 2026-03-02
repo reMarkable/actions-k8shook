@@ -67,9 +67,11 @@ func isValidDNSLabel(name string) bool {
 		if (i == 0 || i == len(name)-1) && ch == '-' {
 			return false
 		}
+
 		if (ch < 'a' || ch > 'z') && (ch < '0' || ch > '9') && ch != '-' {
 			return false
 		}
+
 	}
 
 	return true
