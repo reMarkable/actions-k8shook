@@ -13,6 +13,6 @@ jobs:
         with:
           go-version: '1.26.1'
       - uses: golangci/golangci-lint-action@v9
-      - uses: j178/prek-action@v1
+      - uses: j178/prek-action@v2
         with:
           extra-args: --all-files --skip no-commit-to-branch --skip "golangci-lint-full" --skip "golangci-lint-fmt" --skip "golangci-lint-config-verify"
