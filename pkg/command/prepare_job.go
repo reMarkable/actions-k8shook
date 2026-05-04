@@ -13,6 +13,8 @@ import (
 	"github.com/reMarkable/k8s-hook/pkg/validation"
 )
 
+const contextKeyContainer = "container"
+
 func PrepareJob(input types.ContainerHookInput) int {
 	if err := validation.ValidateServices(input.Args.Services); err != nil {
 		slog.Error("Invalid service configuration", "err", err)
@@ -46,7 +48,7 @@ func PrepareJob(input types.ContainerHookInput) int {
 			JobPod: podName,
 		},
 		Context: map[string]types.ContainerInfo{
-			"container": {
+			contextKeyContainer: {
 				Image: input.Args.Container.Image,
 				Ports: map[int]int{},
 			},

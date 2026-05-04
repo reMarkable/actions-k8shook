@@ -3,6 +3,7 @@ package types
 
 import (
 	"encoding/json"
+	"slices"
 )
 
 type ContainerHookInput struct {
@@ -61,7 +62,7 @@ func (ia *InputArgs) UnmarshalJSON(data []byte) error {
 func generateContainerName(image string) string {
 	parts := []rune(image)
 	lastSlash := -1
-	for i := len(parts) - 1; i >= 0; i-- {
+	for i := range slices.Backward(parts) {
 		if parts[i] == '/' {
 			lastSlash = i
 			break

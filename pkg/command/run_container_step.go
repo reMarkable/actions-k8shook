@@ -64,7 +64,7 @@ func trySetEntrypointFromImage(input *types.ContainerHookInput) bool {
 
 	entrypointEnv := os.Getenv("ENV_HOOK_CONTAINER_STEP_ENTRYPOINT")
 	if entrypointEnv != "" {
-		slog.Info("Entrypoint not set, using ENV_HOOK_CONTAINER_STEP_ENTRYPOINT from environment", "entrypoint", entrypointEnv)
+		slog.Info("Entrypoint not set, using ENV_HOOK_CONTAINER_STEP_ENTRYPOINT from environment", "entrypoint", entrypointEnv) // #nosec G706 -- value is operator-supplied env var; anyone who can set it already has full access
 		input.Args.Entrypoint = entrypointEnv
 		return true
 	}

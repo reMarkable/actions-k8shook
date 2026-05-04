@@ -12,11 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/reMarkable/k8s-hook/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	v1Meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -26,6 +24,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/client-go/util/homedir"
+
+	"github.com/reMarkable/k8s-hook/pkg/types"
 )
 
 type K8sClient struct {
@@ -51,9 +51,14 @@ const (
 )
 
 const (
-	JobVolumeName    = "work"
-	envTrue          = "true"
-	jobContainerName = "job"
+	JobVolumeName            = "work"
+	envTrue                  = "true"
+	jobContainerName         = "job"
+	envGithubActions         = "GITHUB_ACTIONS"
+	mountPathWorkDir         = "/__w"
+	mountPathGithubHome      = "/github/home"
+	mountPathGithubWorkflow  = "/github/workflow"
+	mountPathGithubWorkspace = "/github/workspace"
 )
 
 func NewK8sClient() (*K8sClient, error) {
@@ -197,25 +202,25 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, services []ty
 		Args:    []string{"-f", "/dev/null"},
 		Env: []v1.EnvVar{
 			{
-				Name: "GITHUB_ACTIONS", Value: "true",
+				Name: envGithubActions, Value: envTrue,
 			},
 			{
-				Name: "CI", Value: "true",
+				Name: "CI", Value: envTrue,
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
 			{
 				Name:      JobVolumeName,
-				MountPath: "/__w",
+				MountPath: mountPathWorkDir,
 			},
 			{
 				Name:      JobVolumeName,
-				MountPath: "/github/home",
+				MountPath: mountPathGithubHome,
 				SubPath:   "_temp/_github_home",
 			},
 			{
 				Name:      JobVolumeName,
-				MountPath: "/github/workflow",
+				MountPath: mountPathGithubWorkflow,
 				SubPath:   "_temp/_github_workflow",
 			},
 		},
@@ -236,7 +241,7 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, services []ty
 		workspace := os.Getenv("GITHUB_WORKSPACE")
 		if workspace == "" {
 			slog.Warn("GITHUB_WORKSPACE is not set, defaulting to /github/workspace")
-			workspace = "/github/workspace"
+			workspace = mountPathGithubWorkspace
 		}
 		// remove anything before _work to get the subpath
 		i := strings.LastIndex(workspace, "_work/")
@@ -246,7 +251,7 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, services []ty
 		jobContainer.VolumeMounts = append([]v1.VolumeMount{
 			{
 				Name:      JobVolumeName,
-				MountPath: "/github/workspace",
+				MountPath: mountPathGithubWorkspace,
 				SubPath:   workspaceRelativePath,
 			},
 			{
@@ -332,7 +337,7 @@ func (c *K8sClient) preparePodSpec(cont types.ContainerDefinition, services []ty
 	if template := os.Getenv("ENV_HOOK_TEMPLATE_PATH"); template != "" {
 		err := applyTemplateToPod(pod, template)
 		if err != nil {
-			slog.Error("Failed to apply template to container", "err", err, "template", template)
+			slog.Error("Failed to apply template to container", "err", err, "template", template) // #nosec G706 -- value is operator-supplied env var; anyone who can set it already has full access
 		}
 	}
 	return pod
@@ -348,8 +353,8 @@ func (c *K8sClient) createServiceContainer(service types.ServiceDefinition) (*v1
 		Name:  service.ContextName,
 		Image: service.Image,
 		Env: []v1.EnvVar{
-			{Name: "GITHUB_ACTIONS", Value: "true"},
-			{Name: "CI", Value: "true"},
+			{Name: envGithubActions, Value: envTrue},
+			{Name: "CI", Value: envTrue},
 		},
 	}
 

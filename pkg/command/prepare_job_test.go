@@ -54,7 +54,7 @@ func TestPrepareJobResponseWithServices(t *testing.T) {
 			// Create a response with services
 			response := types.ResponseType{
 				Context: map[string]types.ContainerInfo{
-					"container": {
+					contextKeyContainer: {
 						Image: "ubuntu:22.04",
 						Ports: map[int]int{},
 					},
@@ -121,7 +121,7 @@ func TestResponseTypeJSONStructure(t *testing.T) {
 	// Create a complete response with services
 	response := types.ResponseType{
 		Context: map[string]types.ContainerInfo{
-			"container": {
+			contextKeyContainer: {
 				Image: "ubuntu:22.04",
 				Ports: map[int]int{8080: 8080},
 			},
@@ -202,7 +202,7 @@ func TestWriteResponse(t *testing.T) {
 
 	response := types.ResponseType{
 		Context: map[string]types.ContainerInfo{
-			"container": {
+			contextKeyContainer: {
 				Image: "ubuntu:22.04",
 				Ports: map[int]int{},
 			},

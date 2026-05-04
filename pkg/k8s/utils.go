@@ -12,9 +12,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/reMarkable/k8s-hook/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	v1Meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/reMarkable/k8s-hook/pkg/types"
 )
 
 var (
@@ -93,7 +94,7 @@ func (c *K8sClient) writeRunScript(args types.InputArgs) (string, string, error)
 	if err != nil {
 		return "", "", err
 	}
-	if err := os.Chmod(f.Name(), 0o755); err != nil {
+	if err := os.Chmod(f.Name(), 0o755); err != nil { // #nosec G703 -- f.Name() comes from os.CreateTemp, not user input
 		return "", "", err
 	}
 
@@ -101,7 +102,7 @@ func (c *K8sClient) writeRunScript(args types.InputArgs) (string, string, error)
 }
 
 func copyDir(src string, dst string) error {
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error { // #nosec G703 -- src is derived from operator-supplied RUNNER_WORKSPACE env var; path traversal is not a meaningful threat here
 		if err != nil {
 			return err
 		}
@@ -113,7 +114,7 @@ func copyDir(src string, dst string) error {
 
 		targetPath := filepath.Join(dst, relPath)
 		if info.IsDir() {
-			return os.MkdirAll(targetPath, info.Mode())
+			return os.MkdirAll(targetPath, info.Mode()) // #nosec G703 -- targetPath is derived from a Walk over operator-supplied RUNNER_WORKSPACE; path traversal is not a meaningful threat here
 		}
 
 		// Copy file
@@ -125,7 +126,7 @@ func copyDir(src string, dst string) error {
 func copyExternals() {
 	workspace := os.Getenv("RUNNER_WORKSPACE")
 	if workspace != "" {
-		slog.Info("Copying externals to workspace", "workspace", workspace)
+		slog.Info("Copying externals to workspace", "workspace", workspace) // #nosec G706 -- value is operator-supplied RUNNER_WORKSPACE env var; anyone who can set it already has full access
 		err := copyDir(filepath.Join(workspace, "../../externals"), filepath.Join(workspace, "../externals"))
 		if err != nil {
 			slog.Error("Failed to copy externals", "error", err)
@@ -144,7 +145,7 @@ func copyFile(src, dst string, mode os.FileMode) error {
 			slog.Warn("Failed to close source file", "error", err)
 		}
 	}()
-	out, err := os.Create(dst)
+	out, err := os.Create(dst) // #nosec G703 -- dst is derived from a Walk over operator-supplied RUNNER_WORKSPACE; path traversal is not a meaningful threat here
 	if err != nil {
 		return err
 	}
@@ -158,7 +159,7 @@ func copyFile(src, dst string, mode os.FileMode) error {
 		return err
 	}
 
-	return os.Chmod(dst, mode)
+	return os.Chmod(dst, mode) // #nosec G703 -- dst is derived from a Walk over operator-supplied RUNNER_WORKSPACE; path traversal is not a meaningful threat here
 }
 
 func getPrepareJobTimeout() int {

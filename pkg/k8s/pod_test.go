@@ -5,10 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/reMarkable/k8s-hook/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	v1Meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"github.com/reMarkable/k8s-hook/pkg/types"
 )
 
 func TestK8sClient_waitForPodReady(t *testing.T) {
@@ -59,7 +60,7 @@ func TestK8sClient_CreatePodSpec(t *testing.T) {
 	if pod.Spec.Containers[0].Image != "example-image" {
 		t.Errorf("expected image 'example-image', got '%s'", pod.Spec.Containers[0].Image)
 	}
-	expectedPaths := []string{"/__e", "/__w", "/github/home", "/github/workflow"}
+	expectedPaths := []string{"/__e", mountPathWorkDir, mountPathGithubHome, mountPathGithubWorkflow}
 	volumes := pod.Spec.Containers[0].VolumeMounts
 	for i, vol := range volumes {
 		if vol.MountPath != expectedPaths[i] {
@@ -67,7 +68,7 @@ func TestK8sClient_CreatePodSpec(t *testing.T) {
 		}
 	}
 	jobPod := c.preparePodSpec(input, nil, PodTypeContainerStep)
-	expectedJobPaths := []string{"/github/workspace", "/github/file_commands", "/__w", "/github/home", "/github/workflow"}
+	expectedJobPaths := []string{mountPathGithubWorkspace, "/github/file_commands", mountPathWorkDir, mountPathGithubHome, mountPathGithubWorkflow}
 	jobVolumes := jobPod.Spec.Containers[0].VolumeMounts
 	for i, vol := range jobVolumes {
 		if vol.MountPath != expectedJobPaths[i] {
@@ -346,7 +347,7 @@ func TestCreateServiceContainer(t *testing.T) {
 				if env.Name == "CI" && env.Value == envTrue {
 					hasCI = true
 				}
-				if env.Name == "GITHUB_ACTIONS" && env.Value == envTrue {
+				if env.Name == envGithubActions && env.Value == envTrue {
 					hasGitHubActions = true
 				}
 			}
@@ -607,7 +608,7 @@ func verifyServiceContainers(t *testing.T, pod *v1.Pod, services []types.Service
 			if env.Name == "CI" && env.Value == envTrue {
 				hasCI = true
 			}
-			if env.Name == "GITHUB_ACTIONS" && env.Value == envTrue {
+			if env.Name == envGithubActions && env.Value == envTrue {
 				hasGitHubActions = true
 			}
 		}

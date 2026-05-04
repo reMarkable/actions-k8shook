@@ -1,10 +1,6 @@
 version: "2"
 run:
   timeout: "10m"
-  build-tags:
-    - containers_image_openpgp
-    - exclude_graphdriver_btrfs
-    - exclude_graphdriver_devicemapper
 linters:
   enable:
     - bodyclose
@@ -31,15 +27,13 @@ linters:
     - unconvert
     - unparam
   settings:
-    gosec:
-      excludes:
-        - G703 # The new taint analysis isn't smart enough and causes many false positives.
-        - G705 # The new taint analysis isn't smart enough and causes many false positives.
-        - G706 # The new taint analysis isn't smart enough and causes many false positives.
     govet:
       disable:
+        - shadow
         - fieldalignment
       enable-all: true
+    nolintlint:
+      require-explanation: true
   exclusions:
     generated: lax
     presets:
@@ -50,9 +44,29 @@ linters:
     rules:
       - linters:
           - govet
+          - err113
+          - noctx
+          - goconst
+          - nolintlint
         path: (.+)_test\.go
-        # Ignoring HTTP Write errors is common as there is nothing to be done if
-        # Write fails.
+      # Hardcoded secrets can occur in tests.
+      - linters:
+          - gosec
+        path: (.+)_test\.go
+        text: "G101:"
+      # Temporarily suppress G117, as it creates a lot of false positives for us:
+      # https://github.com/securego/gosec/issues/1527
+      - linters:
+          - gosec
+        path: (.+)\.go
+        text: "G117:"
+      # Don't worry about SSRF attacks, as end users to not provide endpoints.
+      - linters:
+          - gosec
+        path: (.+)\.go
+        text: "G704:"
+      # Ignoring HTTP Write errors is common as there is nothing to be done if
+      # Write fails.
       - path: (.+)\.go$
         text: Error return value of .(w.Write). is not checked
     paths:
@@ -66,3 +80,14 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+  enable:
+    - gci
+    - gofmt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/reMarkable/)
+        - localmodule
+      custom-order: true
