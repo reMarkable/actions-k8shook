@@ -30,7 +30,7 @@ func findTargetContainer(podContainers []v1.Container, extensionContainerName st
 }
 
 func applyTemplateToPod(pod *v1.Pod, template string) error {
-	templateContent, err := os.ReadFile(template)
+	templateContent, err := os.ReadFile(template) // #nosec G703 -- path comes from operator-supplied ENV_HOOK_TEMPLATE_PATH; path traversal is not a meaningful threat here
 	if err != nil {
 		return err
 	}

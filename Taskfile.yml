@@ -29,7 +29,7 @@ tasks:
     desc: Lint the code
     silent: true
     cmds:
-      - golangci-lint run
+      - golangci-lint run --build-tags "containers_image_openpgp exclude_graphdriver_btrfs exclude_graphdriver_devicemapper"
   help:
     desc: Display this help
     silent: true

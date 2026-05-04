@@ -6,7 +6,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	v1Meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 )
 
 func (c *K8sClient) PruneSecrets() error {
@@ -40,7 +39,7 @@ func (c *K8sClient) createImagePullSecret(registry map[string]string) (string, e
 	authContent := fmt.Sprintf(`{"auths":{"%s":{"username":"%s","password":"%s"}}}`,
 		registryURL, registry["username"], registry["password"])
 	secret := v1.Secret{
-		Immutable: ptr.To(true),
+		Immutable: new(true),
 		ObjectMeta: v1Meta.ObjectMeta{
 			Name: c.GetRunnerPodName() + "-pull-secret-" + podPostfix(),
 			Labels: map[string]string{

@@ -21,8 +21,9 @@ repos:
       - id: check-github-workflows
       - id: check-renovate
   - repo: 'https://github.com/golangci/golangci-lint'
-    rev: v2.10.1
+    rev: v2.11.4
     hooks:
       - id: golangci-lint-full
+        args: ["--build-tags", "containers_image_openpgp exclude_graphdriver_btrfs exclude_graphdriver_devicemapper"]
       - id: golangci-lint-fmt
       - id: golangci-lint-config-verify
