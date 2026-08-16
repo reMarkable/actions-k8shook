@@ -11,7 +11,7 @@ jobs:
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       - uses: actions/setup-go@v7
         with:
-          go-version: '1.26.5'
+          go-version: '1.26.6'
       - uses: golangci/golangci-lint-action@v9
         with:
           args: --build-tags "containers_image_openpgp exclude_graphdriver_btrfs exclude_graphdriver_devicemapper"
