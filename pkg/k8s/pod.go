@@ -102,8 +102,7 @@ func (c *K8sClient) CreatePod(args types.InputArgs, podType PodType) (string, er
 
 	pod, err := c.client.CoreV1().Pods(c.GetNS()).Create(c.ctx, podSpec, v1Meta.CreateOptions{})
 	if err != nil {
-		var statusErr *k8sErrors.StatusError
-		if errors.As(err, &statusErr) {
+		if _, ok := errors.AsType[*k8sErrors.StatusError](err); ok {
 			c.checkPermissions()
 		}
 		return "", err
